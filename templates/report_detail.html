@@ -1,0 +1,432 @@
+{% extends "base.html" %}
+
+{% block title %}{{ report.water_body_name or report.water_body_type }} — Hydria Report{% endblock %}
+
+{% block content %}
+<!-- Top Breadcrumb & Action Toolbar -->
+<div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 1.5rem; flex-wrap: wrap; gap: 1rem;">
+    <div style="display: flex; align-items: center; gap: 0.5rem; font-size: 0.9rem; color: var(--text-muted);">
+        <a href="{{ url_for('community') }}" style="color: var(--text-muted);">Community Reports</a>
+        <span>/</span>
+        <span style="color: var(--text-primary); font-weight: 600;">
+            {{ report.water_body_name or report.water_body_type }}
+        </span>
+    </div>
+
+    <div class="report-action-tools">
+        <button type="button" class="btn btn-secondary btn-sm" onclick="copyReportLink()" id="btn-share-report">
+            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <path d="M4 12v8a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-8"/>
+                <polyline points="16 6 12 2 8 6"/>
+                <line x1="12" y1="2" x2="12" y2="15"/>
+            </svg>
+            Share
+        </button>
+
+        <!-- DELETE OPTION FOR REPORT SUBMITTER -->
+        {% if current_user and current_user.id == report.user_id %}
+            <button type="button" class="btn btn-danger-outline btn-sm" onclick="openDeleteModal()" id="btn-open-delete-modal">
+                <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                    <polyline points="3 6 5 6 21 6"/>
+                    <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/>
+                    <line x1="10" y1="11" x2="10" y2="17"/>
+                    <line x1="14" y1="11" x2="14" y2="17"/>
+                </svg>
+                Delete Report
+            </button>
+        {% endif %}
+    </div>
+</div>
+
+<!-- Executive Report Header -->
+<div class="report-header-bar">
+    <div class="report-title-group">
+        <div style="display: flex; align-items: center; gap: 0.75rem; margin-bottom: 0.5rem; flex-wrap: wrap;">
+            <h1>{{ report.water_body_name or "Unnamed " ~ report.water_body_type }}</h1>
+            
+            {% if report.status == 'Submitted' %}
+                <span class="badge badge-submitted">
+                    <span style="font-size: 0.7rem;">●</span> Verified &amp; Submitted
+                </span>
+            {% elif report.status == 'In Process' %}
+                <span class="badge badge-in-process">
+                    <span style="font-size: 0.7rem;">●</span> In Process Review
+                </span>
+            {% else %}
+                <span class="badge badge-not-watched">
+                    <span style="font-size: 0.7rem;">●</span> Pending Review
+                </span>
+            {% endif %}
+        </div>
+
+        <div class="report-meta-chips">
+            <span class="meta-chip">
+                <span>Type: <strong>{{ report.water_body_type }}</strong></span>
+            </span>
+            <span class="meta-chip">
+                <span>Reported: <strong>{{ report.created_at[:10] }}</strong></span>
+            </span>
+            <span class="meta-chip">
+                <span>Submitter: <strong>{{ report.submitter_name }}</strong></span>
+            </span>
+            <span class="meta-chip">
+                <span>Report ID: <strong>#{{ report.id }}</strong></span>
+            </span>
+        </div>
+    </div>
+</div>
+
+<!-- Two-Column Master Grid Layout -->
+<div class="report-master-grid">
+
+    <!-- LEFT COLUMN: PHOTO EVIDENCE & GEOLOCATION -->
+    <div>
+        <!-- Photo Evidence Card -->
+        <div class="evidence-card">
+            <div class="evidence-img-container">
+                <span class="evidence-badge-overlay">Field Photographic Evidence</span>
+                <img src="/{{ report.image_path }}" alt="{{ report.water_body_name or report.water_body_type }}"
+                     class="evidence-img" onerror="this.src='/static/images/placeholder.svg';">
+            </div>
+            <div class="evidence-footer-bar">
+                <div style="display: flex; align-items: center; gap: 0.4rem;">
+                    <span style="font-size: 0.78rem; font-weight: 600; text-transform: uppercase;">Perceptual Hash:</span>
+                    <span class="evidence-hash-chip" title="Calculated 64-bit dHash perceptual fingerprint">
+                        {{ report.image_hash[:16] }}...
+                    </span>
+                </div>
+                <a href="/{{ report.image_path }}" target="_blank" class="btn btn-secondary btn-sm" style="font-size: 0.78rem;">
+                    View Fullscreen ↗
+                </a>
+            </div>
+        </div>
+
+        <!-- Verified Geolocation Card -->
+        <div class="location-card">
+            <div class="location-card-header">
+                <div class="location-card-title">
+                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="var(--primary)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                        <path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"/>
+                        <circle cx="12" cy="10" r="3"/>
+                    </svg>
+                    <span>Verified Geolocation</span>
+                </div>
+                <span style="font-size: 0.75rem; color: #059669; font-weight: 700; background: #ecfdf5; border: 1px solid #a7f3d0; padding: 0.15rem 0.5rem; border-radius: var(--radius-full);">
+                    ✓ GPS Confirmed
+                </span>
+            </div>
+
+            <div class="coord-grid">
+                <div class="coord-box">
+                    <div class="coord-label">Latitude (N/S)</div>
+                    <div class="coord-val">{{ report.latitude }}</div>
+                </div>
+                <div class="coord-box">
+                    <div class="coord-label">Longitude (E/W)</div>
+                    <div class="coord-val">{{ report.longitude }}</div>
+                </div>
+            </div>
+
+            <!-- External Map Quick Link -->
+            <a href="https://www.openstreetmap.org/?mlat={{ report.latitude }}&mlon={{ report.longitude }}#map=16/{{ report.latitude }}/{{ report.longitude }}" 
+               target="_blank" rel="noopener noreferrer" class="btn btn-secondary btn-block" style="font-size: 0.85rem;" id="link-external-map">
+                <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                    <polygon points="1 6 1 22 8 18 16 22 23 18 23 2 16 6 8 2 1 6"/>
+                    <line x1="8" y1="2" x2="8" y2="18"/>
+                    <line x1="16" y1="6" x2="16" y2="22"/>
+                </svg>
+                Inspect on OpenStreetMap ↗
+            </a>
+
+            <div style="margin-top: 0.75rem; font-size: 0.8rem; color: var(--text-muted); text-align: center;">
+                Captured automatically via device browser sensor at time of report.
+            </div>
+        </div>
+    </div>
+
+    <!-- RIGHT COLUMN: STRUCTURED OBSERVATIONS & HYDRIA INSIGHTS -->
+    <div>
+        <!-- Visual Physical Observations Dashboard -->
+        <div class="obs-section-card">
+            <div class="section-head-strip">
+                <h2 class="section-head-title">Physical Water Observations</h2>
+                <span style="font-size: 0.8rem; color: var(--text-muted); font-weight: 600;">
+                    6 Verified Sensory Metrics
+                </span>
+            </div>
+
+            <div class="obs-tiles-grid">
+                <!-- Tile 1: Water Colour -->
+                <div class="obs-tile">
+                    <div class="obs-tile-top">
+                        <span class="obs-tile-label">Water Colour</span>
+                    </div>
+                    <div>
+                        <div class="obs-tile-val">
+                            {% if report.water_colour == 'Green' %}
+                                <span class="obs-color-dot" style="background-color: #16a34a;"></span>
+                            {% elif report.water_colour == 'Dark Green' %}
+                                <span class="obs-color-dot" style="background-color: #14532d;"></span>
+                            {% elif report.water_colour == 'Brown' %}
+                                <span class="obs-color-dot" style="background-color: #78350f;"></span>
+                            {% elif report.water_colour == 'Black' %}
+                                <span class="obs-color-dot" style="background-color: #1e293b;"></span>
+                            {% elif report.water_colour == 'Yellowish' %}
+                                <span class="obs-color-dot" style="background-color: #ca8a04;"></span>
+                            {% elif report.water_colour == 'Clear' %}
+                                <span class="obs-color-dot" style="background-color: #38bdf8;"></span>
+                            {% else %}
+                                <span class="obs-color-dot" style="background-color: #64748b;"></span>
+                            {% endif %}
+                            <span>{{ report.water_colour }}</span>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Tile 2: Smell / Odor -->
+                <div class="obs-tile">
+                    <div class="obs-tile-top">
+                        <span class="obs-tile-label">Odor / Smell</span>
+                    </div>
+                    <div>
+                        <div class="obs-tile-val" style="font-size: 0.95rem;">
+                            {{ report.smell }}
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Tile 3: Visible Algae -->
+                <div class="obs-tile">
+                    <div class="obs-tile-top">
+                        <span class="obs-tile-label">Visible Algae</span>
+                    </div>
+                    <div>
+                        <div class="obs-tile-val">
+                            {% if report.algae == 'Yes' %}
+                                <span style="color: #059669; font-weight: 700;">Yes</span>
+                            {% elif report.algae == 'No' %}
+                                <span style="color: var(--text-muted);">No</span>
+                            {% else %}
+                                <span style="color: #d97706;">Unsure</span>
+                            {% endif %}
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Tile 4: Visible Waste -->
+                <div class="obs-tile">
+                    <div class="obs-tile-top">
+                        <span class="obs-tile-label">Surface Waste</span>
+                    </div>
+                    <div>
+                        <div class="obs-tile-val">{{ report.visible_waste }}</div>
+                        <div class="obs-waste-indicator">
+                            <span class="waste-bar {% if report.visible_waste in ['Low', 'Medium', 'High'] %}active-low{% endif %}"></span>
+                            <span class="waste-bar {% if report.visible_waste in ['Medium', 'High'] %}active-med{% endif %}"></span>
+                            <span class="waste-bar {% if report.visible_waste == 'High' %}active-high{% endif %}"></span>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Tile 5: Overall Appearance -->
+                <div class="obs-tile">
+                    <div class="obs-tile-top">
+                        <span class="obs-tile-label">Appearance</span>
+                    </div>
+                    <div>
+                        <div class="obs-tile-val">{{ report.water_appearance }}</div>
+                    </div>
+                </div>
+
+                <!-- Tile 6: Dead Fish / Animals -->
+                <div class="obs-tile">
+                    <div class="obs-tile-top">
+                        <span class="obs-tile-label">Wildlife Impact</span>
+                    </div>
+                    <div>
+                        <div class="obs-tile-val">
+                            {% if report.dead_fish == 'Yes' %}
+                                <span style="color: #dc2626; font-weight: 800;">Dead Animals Seen</span>
+                            {% else %}
+                                <span style="color: #059669; font-weight: 600;">No Mortality</span>
+                            {% endif %}
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Citizen Field Notes (if provided) -->
+            {% if report.additional_observation %}
+                <div class="citizen-notes-box">
+                    <div class="notes-header">
+                        Citizen Observer Field Note
+                    </div>
+                    <p class="notes-content">
+                        &ldquo;{{ report.additional_observation }}&rdquo;
+                    </p>
+                </div>
+            {% endif %}
+        </div>
+
+        <!-- Hydria Insights Diagnostic Card -->
+        <div class="diagnostic-card">
+            <div class="diagnostic-header">
+                <div class="diagnostic-title-box">
+                    <div>
+                        <h3 class="diagnostic-title">Hydria Environmental Insights</h3>
+                        <div style="font-size: 0.78rem; color: var(--text-muted);">Local Rule-Based Freshwater Health Assessment</div>
+                    </div>
+                </div>
+
+                <span class="badge {{ insight.badge_class }}" style="font-size: 0.82rem; padding: 0.35rem 0.85rem;">
+                    {{ insight.concern_level }}
+                </span>
+            </div>
+
+            <!-- Severity Meter Bar -->
+            <div class="severity-meter-strip">
+                <span class="severity-label-small">Estimated Stress Level:</span>
+                <div class="severity-track">
+                    <div class="severity-seg active-low"></div>
+                    <div class="severity-seg {% if insight.concern_score >= 3 %}active-med{% endif %}"></div>
+                    <div class="severity-seg {% if insight.concern_score >= 6 %}active-high{% endif %}"></div>
+                </div>
+                <span style="font-size: 0.85rem; font-weight: 700; color: var(--text-primary);">
+                    Score {{ insight.concern_score }}
+                </span>
+            </div>
+
+            <!-- Executive Diagnostic Summary -->
+            <p class="diagnostic-summary">
+                {{ insight.summary }}
+            </p>
+
+            <!-- Key Stressors Identified -->
+            {% if insight.flagged_items %}
+                <div style="font-size: 0.78rem; font-weight: 700; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.05em; margin-bottom: 0.5rem;">
+                    Key Environmental Stressors Flagged:
+                </div>
+                <div class="stressor-checklist">
+                    {% for item in insight.flagged_items %}
+                        <div class="stressor-item">
+                            <span style="color: var(--primary); font-weight: 700;">•</span>
+                            <span>{{ item }}</span>
+                        </div>
+                    {% endfor %}
+                </div>
+            {% endif %}
+
+            <!-- Recommended Next Action -->
+            <div class="recommendation-box">
+                <div class="rec-title">Recommended Community Action</div>
+                <p class="rec-body">{{ insight.recommendation }}</p>
+            </div>
+
+            <!-- Scientific Transparency Disclaimer -->
+            <div class="diagnostic-disclaimer">
+                {{ insight.disclaimer }}
+            </div>
+        </div>
+
+        <!-- Community Confirmation & Voting Card -->
+        <div class="confirmation-card">
+            <div class="confirmation-count-box">
+                <div>
+                    <div class="confirmation-count-num">
+                        <span class="vote-count">{{ report.vote_count }}</span> Community Confirmations
+                    </div>
+                    <div class="confirmation-count-text">
+                        Community observers have verified and confirmed this water condition.
+                    </div>
+                </div>
+            </div>
+
+            <div>
+                {% if current_user %}
+                    <form action="{{ url_for('vote', report_id=report.id) }}" method="POST" class="vote-form-ajax">
+                        <button type="submit" class="btn btn-vote {% if user_voted %}voted{% endif %}" id="vote-btn">
+                            {% if user_voted %}
+                                Confirmed by You
+                            {% else %}
+                                I Observed This Too
+                            {% endif %}
+                        </button>
+                    </form>
+                {% else %}
+                    <a href="{{ url_for('login', next=request.path) }}" class="btn btn-vote">
+                        Log in to confirm observation
+                    </a>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- DELETE CONFIRMATION MODAL (Section for report owner) -->
+{% if current_user and current_user.id == report.user_id %}
+<div id="deleteModal" class="modal-backdrop" style="display: none;">
+    <div class="modal-card">
+        <div class="modal-header">
+            <svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="var(--danger)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <circle cx="12" cy="12" r="10"/>
+                <line x1="12" y1="8" x2="12" y2="12"/>
+                <line x1="12" y1="16" x2="12.01" y2="16"/>
+            </svg>
+            <h3 class="modal-title">Delete Report</h3>
+        </div>
+
+        <p class="modal-desc">
+            Are you sure you want to delete your report for <strong>{{ report.water_body_name or report.water_body_type }}</strong>? 
+            This observation record, community votes, and uploaded photo will be permanently deleted from the database.
+        </p>
+
+        <div class="modal-actions">
+            <button type="button" class="btn btn-secondary" onclick="closeDeleteModal()">
+                Cancel
+            </button>
+            <form action="{{ url_for('delete_report_route', report_id=report.id) }}" method="POST">
+                <button type="submit" class="btn btn-danger" id="confirm-delete-btn">
+                    Yes, Delete Report
+                </button>
+            </form>
+        </div>
+    </div>
+</div>
+{% endif %}
+
+{% endblock %}
+
+{% block scripts %}
+<script>
+function openDeleteModal() {
+    const modal = document.getElementById('deleteModal');
+    if (modal) {
+        modal.style.display = 'flex';
+    }
+}
+
+function closeDeleteModal() {
+    const modal = document.getElementById('deleteModal');
+    if (modal) {
+        modal.style.display = 'none';
+    }
+}
+
+function copyReportLink() {
+    const url = window.location.href;
+    navigator.clipboard.writeText(url).then(() => {
+        alert("Report link copied to clipboard!");
+    }).catch(() => {
+        prompt("Copy this report link:", url);
+    });
+}
+
+// Close modal if user clicks outside modal-card
+window.addEventListener('click', (e) => {
+    const modal = document.getElementById('deleteModal');
+    if (e.target === modal) {
+        closeDeleteModal();
+    }
+});
+</script>
+{% endblock %}

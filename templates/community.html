@@ -1,0 +1,104 @@
+{% extends "base.html" %}
+
+{% block title %}Community Reports — Hydria{% endblock %}
+
+{% block content %}
+<div style="margin-bottom: 2rem; display: flex; align-items: flex-end; justify-content: space-between; flex-wrap: wrap; gap: 1rem;">
+    <div>
+        <h1 style="font-size: 2rem; font-weight: 800; color: var(--text-primary); margin-bottom: 0.35rem;">
+            Community Reports
+        </h1>
+        <p style="color: var(--text-secondary); font-size: 0.95rem;">
+            Explore verified citizen freshwater observations from across the community.
+        </p>
+    </div>
+    <div style="display: flex; gap: 0.75rem; align-items: center;">
+        <input type="text" id="community-search" placeholder="🔍 Search water body or type..." 
+               class="form-control" style="width: 250px; padding: 0.5rem 0.85rem; font-size: 0.88rem;" onkeyup="filterCommunityReports()">
+        {% if current_user %}
+            <a href="{{ url_for('report_page') }}" class="btn btn-primary" style="white-space: nowrap;">
+                + Report Water Body
+            </a>
+        {% endif %}
+    </div>
+</div>
+
+{% if reports %}
+    <div class="reports-grid">
+        {% for r in reports %}
+            <div class="report-card">
+                <img src="/{{ r.image_path }}" alt="{{ r.water_body_name or r.water_body_type }}" class="report-card-img" 
+                     onerror="this.src='/static/images/placeholder.svg';">
+                
+                <div class="report-card-body">
+                    <div style="display: flex; align-items: flex-start; justify-content: space-between; gap: 0.5rem; margin-bottom: 0.35rem;">
+                        <h2 class="report-card-title">
+                            {{ r.water_body_name or "Unnamed " ~ r.water_body_type }}
+                        </h2>
+                        <span class="badge badge-submitted">Submitted</span>
+                    </div>
+
+                    <div style="font-size: 0.85rem; color: var(--text-secondary); margin-bottom: 0.5rem;">
+                        <span>{{ r.water_body_type }}</span> &bull; <span>{{ r.created_at[:10] }}</span>
+                    </div>
+
+                    <!-- Observation Tags (Section 22) -->
+                    <div class="report-tags">
+                        <span class="tag-pill">{{ r.water_colour }} water</span>
+                        <span class="tag-pill">{{ r.smell }}</span>
+                        {% if r.algae == 'Yes' %}
+                            <span class="tag-pill" style="background-color: var(--accent-light); color: var(--accent-hover); border-color: #a7f3d0;">
+                                Algae detected
+                            </span>
+                        {% endif %}
+                        {% if r.visible_waste in ['Medium', 'High'] %}
+                            <span class="tag-pill" style="background-color: var(--warning-light); color: #92400e; border-color: #fde68a;">
+                                {{ r.visible_waste }} waste
+                            </span>
+                        {% endif %}
+                    </div>
+
+                    <div class="report-card-footer">
+                        <span style="font-size: 0.95rem; font-weight: 600; color: var(--text-primary);">
+                            👍 {{ r.vote_count }}
+                        </span>
+                        <a href="{{ url_for('report_detail', report_id=r.id) }}" class="btn btn-secondary" style="padding: 0.4rem 0.85rem; font-size: 0.85rem;">
+                            View Report
+                        </a>
+                    </div>
+                </div>
+            </div>
+        {% endfor %}
+    </div>
+{% else %}
+    <div class="card" style="text-align: center; padding: 3rem 1.5rem;">
+        <div style="font-size: 2.5rem; margin-bottom: 0.75rem;">💧</div>
+        <h3 style="font-size: 1.25rem; font-weight: 700; margin-bottom: 0.4rem;">No submitted reports yet</h3>
+        <p style="color: var(--text-secondary); max-width: 450px; margin: 0 auto 1.5rem;">
+            Be the first community member to log a local water observation!
+        </p>
+        {% if current_user %}
+            <a href="{{ url_for('report_page') }}" class="btn btn-primary">
+                + Report a Water Body
+            </a>
+        {% endif %}
+    </div>
+{% endif %}
+{% endblock %}
+
+{% block scripts %}
+<script>
+function filterCommunityReports() {
+    const q = document.getElementById('community-search').value.toLowerCase();
+    const cards = document.querySelectorAll('.report-card');
+    cards.forEach(card => {
+        const text = card.textContent.toLowerCase();
+        if (text.includes(q)) {
+            card.style.display = 'flex';
+        } else {
+            card.style.display = 'none';
+        }
+    });
+}
+</script>
+{% endblock %}

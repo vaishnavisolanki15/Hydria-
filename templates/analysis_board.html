@@ -1,0 +1,154 @@
+{% extends "base.html" %}
+
+{% block title %}Analysis Board — Hydria{% endblock %}
+
+{% block content %}
+<div style="margin-bottom: 2rem;">
+    <h1 style="font-size: 1.85rem; font-weight: 800; color: var(--text-primary); margin-bottom: 0.35rem;">
+        Hydria Analysis Board
+    </h1>
+    <p style="color: var(--text-secondary); font-size: 0.95rem;">
+        Track reports across the three review workflow stages: Not Watched, In Process, and Submitted.
+    </p>
+</div>
+
+<!-- Three Column Layout (Section 21 & 36) -->
+<div class="board-grid">
+    
+    <!-- COLUMN 1: NOT WATCHED -->
+    <div class="board-column">
+        <div class="board-col-header">
+            <div style="display: flex; align-items: center; gap: 0.5rem;">
+                <span style="color: #64748b;">⚪</span>
+                <span class="board-col-title">Not Watched</span>
+            </div>
+            <span class="board-col-count">{{ grouped['Not Watched']|length }}</span>
+        </div>
+
+        {% if grouped['Not Watched'] %}
+            {% for r in grouped['Not Watched'] %}
+                <div class="board-card">
+                    <div style="font-weight: 700; font-size: 1.05rem; color: var(--text-primary); margin-bottom: 0.25rem;">
+                        Water Body: {{ r.water_body_name or "Unnamed " ~ r.water_body_type }}
+                    </div>
+                    <div style="font-size: 0.8rem; color: var(--text-muted); margin-bottom: 0.6rem;">
+                        Reported: {{ r.created_at[:10] }}
+                    </div>
+
+                    <div style="font-size: 0.85rem; line-height: 1.5; color: var(--text-secondary); margin-bottom: 0.75rem;">
+                        <div><strong>Water:</strong> {{ r.water_colour }}</div>
+                        <div><strong>Smell:</strong> {{ r.smell }}</div>
+                        <div><strong>Algae:</strong> {{ r.algae }}</div>
+                        <div><strong>Waste:</strong> {{ r.visible_waste }}</div>
+                        <div style="margin-top: 0.25rem;">
+                            <strong>Status:</strong> <span class="badge badge-not-watched">{{ r.status }}</span>
+                        </div>
+                    </div>
+
+                    <div style="display: flex; align-items: center; justify-content: space-between; padding-top: 0.6rem; border-top: 1px solid var(--border-color); font-size: 0.85rem;">
+                        <span><strong>Votes:</strong> {{ r.vote_count }}</span>
+                        <a href="{{ url_for('report_detail', report_id=r.id) }}" class="btn btn-secondary" style="padding: 0.25rem 0.65rem; font-size: 0.8rem;">
+                            View
+                        </a>
+                    </div>
+                </div>
+            {% endfor %}
+        {% else %}
+            <div style="text-align: center; color: var(--text-muted); font-size: 0.88rem; padding: 2rem 1rem;">
+                No reports in this queue.
+            </div>
+        {% endif %}
+    </div>
+
+    <!-- COLUMN 2: IN PROCESS -->
+    <div class="board-column">
+        <div class="board-col-header">
+            <div style="display: flex; align-items: center; gap: 0.5rem;">
+                <span style="color: #d97706;">🟡</span>
+                <span class="board-col-title">In Process</span>
+            </div>
+            <span class="board-col-count">{{ grouped['In Process']|length }}</span>
+        </div>
+
+        {% if grouped['In Process'] %}
+            {% for r in grouped['In Process'] %}
+                <div class="board-card" style="border-left: 3px solid var(--warning);">
+                    <div style="font-weight: 700; font-size: 1.05rem; color: var(--text-primary); margin-bottom: 0.25rem;">
+                        Water Body: {{ r.water_body_name or "Unnamed " ~ r.water_body_type }}
+                    </div>
+                    <div style="font-size: 0.8rem; color: var(--text-muted); margin-bottom: 0.6rem;">
+                        Reported: {{ r.created_at[:10] }}
+                    </div>
+
+                    <div style="font-size: 0.85rem; line-height: 1.5; color: var(--text-secondary); margin-bottom: 0.75rem;">
+                        <div><strong>Water:</strong> {{ r.water_colour }}</div>
+                        <div><strong>Smell:</strong> {{ r.smell }}</div>
+                        <div><strong>Algae:</strong> {{ r.algae }}</div>
+                        <div><strong>Waste:</strong> {{ r.visible_waste }}</div>
+                        <div style="margin-top: 0.25rem;">
+                            <strong>Status:</strong> <span class="badge badge-in-process">{{ r.status }}</span>
+                        </div>
+                    </div>
+
+                    <div style="display: flex; align-items: center; justify-content: space-between; padding-top: 0.6rem; border-top: 1px solid var(--border-color); font-size: 0.85rem;">
+                        <span><strong>Votes:</strong> {{ r.vote_count }}</span>
+                        <a href="{{ url_for('report_detail', report_id=r.id) }}" class="btn btn-secondary" style="padding: 0.25rem 0.65rem; font-size: 0.8rem;">
+                            View
+                        </a>
+                    </div>
+                </div>
+            {% endfor %}
+        {% else %}
+            <div style="text-align: center; color: var(--text-muted); font-size: 0.88rem; padding: 2rem 1rem;">
+                No reports in this queue.
+            </div>
+        {% endif %}
+    </div>
+
+    <!-- COLUMN 3: SUBMITTED -->
+    <div class="board-column">
+        <div class="board-col-header">
+            <div style="display: flex; align-items: center; gap: 0.5rem;">
+                <span style="color: #059669;">🟢</span>
+                <span class="board-col-title">Submitted</span>
+            </div>
+            <span class="board-col-count">{{ grouped['Submitted']|length }}</span>
+        </div>
+
+        {% if grouped['Submitted'] %}
+            {% for r in grouped['Submitted'] %}
+                <div class="board-card" style="border-left: 3px solid var(--accent);">
+                    <div style="font-weight: 700; font-size: 1.05rem; color: var(--text-primary); margin-bottom: 0.25rem;">
+                        Water Body: {{ r.water_body_name or "Unnamed " ~ r.water_body_type }}
+                    </div>
+                    <div style="font-size: 0.8rem; color: var(--text-muted); margin-bottom: 0.6rem;">
+                        Reported: {{ r.created_at[:10] }}
+                    </div>
+
+                    <div style="font-size: 0.85rem; line-height: 1.5; color: var(--text-secondary); margin-bottom: 0.75rem;">
+                        <div><strong>Water:</strong> {{ r.water_colour }}</div>
+                        <div><strong>Smell:</strong> {{ r.smell }}</div>
+                        <div><strong>Algae:</strong> {{ r.algae }}</div>
+                        <div><strong>Waste:</strong> {{ r.visible_waste }}</div>
+                        <div style="margin-top: 0.25rem;">
+                            <strong>Status:</strong> <span class="badge badge-submitted">{{ r.status }}</span>
+                        </div>
+                    </div>
+
+                    <div style="display: flex; align-items: center; justify-content: space-between; padding-top: 0.6rem; border-top: 1px solid var(--border-color); font-size: 0.85rem;">
+                        <span><strong>Votes:</strong> {{ r.vote_count }}</span>
+                        <a href="{{ url_for('report_detail', report_id=r.id) }}" class="btn btn-secondary" style="padding: 0.25rem 0.65rem; font-size: 0.8rem;">
+                            View
+                        </a>
+                    </div>
+                </div>
+            {% endfor %}
+        {% else %}
+            <div style="text-align: center; color: var(--text-muted); font-size: 0.88rem; padding: 2rem 1rem;">
+                No reports in this queue.
+            </div>
+        {% endif %}
+    </div>
+
+</div>
+{% endblock %}

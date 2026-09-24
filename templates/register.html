@@ -1,0 +1,51 @@
+{% extends "base.html" %}
+
+{% block title %}Create Account — Hydria{% endblock %}
+
+{% block content %}
+<div class="auth-wrapper">
+    <div class="auth-header">
+        <div style="font-size: 2.5rem; margin-bottom: 0.5rem;">💧</div>
+        <h1 class="auth-title">HYDRIA</h1>
+        <p class="auth-tagline">Create your citizen scientist account</p>
+    </div>
+
+    <div class="card">
+        <form method="POST" action="{{ url_for('register') }}">
+            <div class="form-group">
+                <label for="name" class="form-label">Full Name <span class="required">*</span></label>
+                <input type="text" id="name" name="name" class="form-control" 
+                       placeholder="e.g. Vaishnavi Sharma" value="{{ name or '' }}" required autofocus>
+            </div>
+
+            <div class="form-group">
+                <label for="email" class="form-label">Email Address <span class="required">*</span></label>
+                <input type="email" id="email" name="email" class="form-control" 
+                       placeholder="name@example.com" value="{{ email or '' }}" required>
+            </div>
+
+            <div class="form-group">
+                <label for="password" class="form-label">Password <span class="required">*</span></label>
+                <input type="password" id="password" name="password" class="form-control" 
+                       placeholder="Minimum 6 characters" minlength="6" required>
+                <div class="form-hint">Must be at least 6 characters.</div>
+            </div>
+
+            <div class="form-group">
+                <label for="confirm_password" class="form-label">Confirm Password <span class="required">*</span></label>
+                <input type="password" id="confirm_password" name="confirm_password" class="form-control" 
+                       placeholder="Re-type your password" minlength="6" required>
+            </div>
+
+            <button type="submit" class="btn btn-primary btn-block btn-large" id="register-submit-btn">
+                Create Account
+            </button>
+        </form>
+
+        <div class="auth-footer">
+            Already have an account? <br>
+            <a href="{{ url_for('login') }}" style="font-weight: 600;">Log in</a>
+        </div>
+    </div>
+</div>
+{% endblock %}

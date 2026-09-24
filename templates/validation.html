@@ -1,0 +1,235 @@
+{% extends "base.html" %}
+
+{% block title %}Hydria Report Check — Hydria{% endblock %}
+
+{% block content %}
+<div class="validation-card">
+    <div style="text-align: center; margin-bottom: 2rem;">
+        <h1 style="font-size: 1.85rem; font-weight: 800; color: var(--text-primary); margin-bottom: 0.35rem;">
+            Hydria Report Check
+        </h1>
+        <p style="color: var(--text-secondary); font-size: 0.95rem;">
+            Step 3 of 3: Local automated verification before community submission
+        </p>
+    </div>
+
+    <!-- CASE 1: MISSING REQUIRED FIELDS (Section 18) -->
+    {% if has_missing %}
+        <div class="card" style="border-top: 4px solid var(--warning);">
+            <div style="display: flex; align-items: center; gap: 0.75rem; margin-bottom: 1rem;">
+                <span style="font-size: 1.8rem;">📋</span>
+                <div>
+                    <h2 style="font-size: 1.35rem; font-weight: 700; color: #92400e;">Almost there!</h2>
+                    <p style="font-size: 0.9rem; color: var(--text-secondary);">
+                        Please complete the following required items to proceed:
+                    </p>
+                </div>
+            </div>
+
+            <ul style="list-style: none; margin: 1rem 0 1.5rem 0.5rem;">
+                {% for field in missing_fields %}
+                    <li style="padding: 0.4rem 0; display: flex; align-items: center; gap: 0.6rem; color: #b45309; font-weight: 500;">
+                        <span style="font-size: 1.1rem;">•</span>
+                        <span>{{ field }}</span>
+                    </li>
+                {% endfor %}
+            </ul>
+
+            <!-- Return to form with preserved data -->
+            <form method="POST" action="{{ url_for('validate_report') }}" id="fix-form">
+                {% for key, val in form_data.items() %}
+                    <input type="hidden" name="{{ key }}" value="{{ val }}">
+                {% endfor %}
+                <input type="hidden" name="temp_image_filename" value="{{ temp_filename }}">
+                <a href="javascript:history.back()" class="btn btn-primary btn-large btn-block" id="btn-fix-missing">
+                    Complete Missing Information &rarr;
+                </a>
+            </form>
+        </div>
+
+    <!-- CASE 2: VALIDATION COMPLETED (Checklist View) -->
+    {% else %}
+        <div class="card" style="margin-bottom: 1.5rem;">
+            <div style="padding-bottom: 0.75rem; border-bottom: 1px solid var(--border-color); margin-bottom: 1rem;">
+                <h2 style="font-size: 1.25rem; font-weight: 700; color: var(--text-primary);">
+                    Verification Checklist
+                </h2>
+                <div style="font-size: 0.85rem; color: var(--text-secondary);">
+                    Water body: <strong>{{ form_data.water_body_name or form_data.water_body_type }}</strong> &bull;
+                    Coordinates: {{ form_data.latitude }}, {{ form_data.longitude }}
+                </div>
+            </div>
+
+            <!-- Checklist Items (Section 17) -->
+            <div class="checklist">
+                <!-- Check: Location Detected -->
+                <div class="check-item">
+                    <span class="check-icon check-pass">✓</span>
+                    <div class="check-text">
+                        <div class="check-title">Location detected</div>
+                        <div class="check-desc">Browser coordinates recorded: ({{ form_data.latitude }}, {{ form_data.longitude }})</div>
+                    </div>
+                </div>
+
+                <!-- Check: Water Information Completed -->
+                <div class="check-item">
+                    <span class="check-icon check-pass">✓</span>
+                    <div class="check-text">
+                        <div class="check-title">Water information completed</div>
+                        <div class="check-desc">{{ form_data.water_body_type }} &bull; {{ form_data.water_colour }} water &bull; {{ form_data.smell }}</div>
+                    </div>
+                </div>
+
+                <!-- Check: Image Uploaded -->
+                <div class="check-item">
+                    <span class="check-icon check-pass">✓</span>
+                    <div class="check-text">
+                        <div class="check-title">Image uploaded</div>
+                        <div class="check-desc">Photo attached for verification</div>
+                    </div>
+                </div>
+
+                <!-- Check: File Validity -->
+                <div class="check-item">
+                    {% if validation.file_valid %}
+                        <span class="check-icon check-pass">✓</span>
+                        <div class="check-text">
+                            <div class="check-title">Image file is valid</div>
+                            <div class="check-desc">{{ validation.file_msg }}</div>
+                        </div>
+                    {% else %}
+                        <span class="check-icon check-fail">✗</span>
+                        <div class="check-text">
+                            <div class="check-title">Image file issue</div>
+                            <div class="check-desc" style="color: var(--danger);">{{ validation.file_msg }}</div>
+                        </div>
+                    {% endif %}
+                </div>
+
+                <!-- Check: Duplicate Image -->
+                <div class="check-item">
+                    {% if validation.duplicate_check %}
+                        <span class="check-icon check-pass">✓</span>
+                        <div class="check-text">
+                            <div class="check-title">No duplicate image found</div>
+                            <div class="check-desc">Image hash verified as unique in Hydria database</div>
+                        </div>
+                    {% else %}
+                        <span class="check-icon check-fail">⚠</span>
+                        <div class="check-text">
+                            <div class="check-title">Duplicate photo detected</div>
+                            <div class="check-desc" style="color: var(--danger);">{{ validation.duplicate_msg }}</div>
+                        </div>
+                    {% endif %}
+                </div>
+
+                <!-- Check: Photo Suitability -->
+                <div class="check-item">
+                    {% if validation.image_suitability and not validation.suitability_warning %}
+                        <span class="check-icon check-pass">✓</span>
+                        <div class="check-text">
+                            <div class="check-title">Photo appears suitable</div>
+                            <div class="check-desc">{{ validation.suitability_msg }}</div>
+                        </div>
+                    {% elif validation.image_suitability and validation.suitability_warning %}
+                        <span class="check-icon check-warn">⚠</span>
+                        <div class="check-text">
+                            <div class="check-title">Photo suitability notice</div>
+                            <div class="check-desc" style="color: var(--warning);">{{ validation.suitability_msg }}</div>
+                        </div>
+                    {% else %}
+                        <span class="check-icon check-fail">✗</span>
+                        <div class="check-text">
+                            <div class="check-title">Photo could not be validated</div>
+                            <div class="check-desc" style="color: var(--danger);">{{ validation.suitability_msg }}</div>
+                        </div>
+                    {% endif %}
+                </div>
+
+                <!-- Check: Photo EXIF Location (Section 16) -->
+                <div class="check-item">
+                    {% if validation.location_check == 'pass' %}
+                        <span class="check-icon check-pass">✓</span>
+                        <div class="check-text">
+                            <div class="check-title">Photo location verified</div>
+                            <div class="check-desc">{{ validation.location_msg }}</div>
+                        </div>
+                    {% elif validation.location_check == 'warning' %}
+                        <span class="check-icon check-warn">⚠</span>
+                        <div class="check-text">
+                            <div class="check-title">Photo location warning</div>
+                            <div class="check-desc" style="color: var(--warning);">{{ validation.location_msg }}</div>
+                        </div>
+                    {% else %}
+                        <span class="check-icon" style="color: var(--text-muted);">ℹ</span>
+                        <div class="check-text">
+                            <div class="check-title">Photo location metadata</div>
+                            <div class="check-desc" style="color: var(--text-secondary);">{{ validation.location_msg }}</div>
+                        </div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+
+        <!-- DUPLICATE REPORT ADVISORY (Section 24) -->
+        {% if nearby_reports %}
+            <div class="alert alert-warning" style="flex-direction: column; align-items: stretch;">
+                <div style="display: flex; align-items: center; gap: 0.5rem; font-weight: 700;">
+                    <span>⚠</span> A similar report already exists for this location.
+                </div>
+                <p style="font-size: 0.88rem; margin: 0.4rem 0 0.75rem;">
+                    Another citizen reported <strong>{{ nearby_reports[0].water_body_name }}</strong> today (~{{ nearby_reports[0].distance_meters }}m away). Would you like to view the existing report or continue anyway?
+                </p>
+                <div style="display: flex; gap: 0.75rem;">
+                    <a href="{{ url_for('report_detail', report_id=nearby_reports[0].id) }}" class="btn btn-secondary" style="font-size: 0.85rem;" target="_blank">
+                        View Existing Report
+                    </a>
+                </div>
+            </div>
+        {% endif %}
+
+        <!-- FINAL SUBMIT OR FIX ACTIONS (Section 17 & 19) -->
+        {% if ready_to_submit %}
+            <div class="card" style="text-align: center; background: #f0fdf4; border-color: #86efac; padding: 2rem;">
+                <h3 style="font-size: 1.3rem; font-weight: 700; color: #166534; margin-bottom: 0.35rem;">
+                    Your report looks ready!
+                </h3>
+                <p style="font-size: 0.95rem; color: #15803d; max-width: 500px; margin: 0 auto 1.5rem;">
+                    All required observations and photo verifications have passed. Click below to submit your report to the community.
+                </p>
+
+                <form method="POST" action="{{ url_for('submit_report') }}">
+                    {% for key, val in form_data.items() %}
+                        <input type="hidden" name="{{ key }}" value="{{ val }}">
+                    {% endfor %}
+                    <input type="hidden" name="temp_filename" value="{{ temp_filename }}">
+                    
+                    <div style="display: flex; justify-content: center; gap: 1rem;">
+                        <a href="javascript:history.back()" class="btn btn-secondary">
+                            Fix Details
+                        </a>
+                        <button type="submit" class="btn btn-accent btn-large" id="btn-final-submit" style="padding: 0.85rem 2.5rem;">
+                            Submit Report
+                        </button>
+                    </div>
+                </form>
+            </div>
+        {% else %}
+            <!-- Problems Found Screen -->
+            <div class="card" style="text-align: center; background: #fffbeb; border-color: #fde68a; padding: 2rem;">
+                <div style="font-size: 2.2rem; margin-bottom: 0.5rem;">⚠</div>
+                <h3 style="font-size: 1.3rem; font-weight: 700; color: #92400e; margin-bottom: 0.35rem;">
+                    Hydria found something to check
+                </h3>
+                <p style="font-size: 0.95rem; color: #b45309; max-width: 500px; margin: 0 auto 1.5rem;">
+                    One or more image verification checks did not pass. Please review the checklist above and upload a suitable water photo.
+                </p>
+                <a href="javascript:history.back()" class="btn btn-primary btn-large" id="btn-fix-report">
+                    Fix Report
+                </a>
+            </div>
+        {% endif %}
+
+    {% endif %}
+</div>
+{% endblock %}

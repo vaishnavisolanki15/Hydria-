@@ -1,0 +1,230 @@
+{% extends "base.html" %}
+
+{% block title %}Report Water Body — Hydria{% endblock %}
+
+{% block content %}
+<div class="report-wizard">
+    <div style="text-align: center; margin-bottom: 1.5rem;">
+        <h1 style="font-size: 1.85rem; font-weight: 800; color: var(--text-primary); margin-bottom: 0.35rem;">
+            Report Water Body
+        </h1>
+        <p style="color: var(--text-secondary); font-size: 0.95rem;">
+            Simple observations from citizens help protect local freshwater systems.
+        </p>
+    </div>
+
+    <!-- Step Progress Indicator -->
+    <div class="step-indicator">
+        <div class="step-pill active">
+            <span>1</span> Location &amp; Observation
+        </div>
+        <div class="step-pill active">
+            <span>2</span> Upload Evidence
+        </div>
+        <div class="step-pill">
+            <span>3</span> Hydria Verification
+        </div>
+    </div>
+
+    <form method="POST" action="{{ url_for('validate_report') }}" enctype="multipart/form-data" id="report-form">
+        <!-- Hidden inputs for coordinates populated by JS -->
+        <input type="hidden" id="latitude-input" name="latitude" value="{{ form_data.latitude or '' }}">
+        <input type="hidden" id="longitude-input" name="longitude" value="{{ form_data.longitude or '' }}">
+
+        <!-- STEP 1: LOCATION & OBSERVATION -->
+        <div class="card" style="margin-bottom: 1.5rem;">
+            <div class="card-header" style="border-bottom: 1px solid var(--border-color); padding-bottom: 0.75rem;">
+                <h2 style="font-size: 1.2rem; font-weight: 700; color: var(--primary);">
+                    Step 1 of 3: Location &amp; Observations
+                </h2>
+                <p style="font-size: 0.85rem; color: var(--text-secondary); margin-top: 0.2rem;">
+                    Location is automatically acquired using your device's browser sensor.
+                </p>
+            </div>
+
+            <!-- Automatic Location Detection Box (Section 9) -->
+            <div class="form-group">
+                <label class="form-label">
+                    Water Body Location <span class="required">*</span>
+                </label>
+                <div id="location-status" class="location-box">
+                    <div style="display: flex; align-items: center; gap: 0.5rem;">
+                        <span>Detecting your location...</span>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Water Body Identification -->
+            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1rem;">
+                <div class="form-group">
+                    <label for="water_body_name" class="form-label">
+                        Water Body Name <span class="optional">(Optional)</span>
+                    </label>
+                    <input type="text" id="water_body_name" name="water_body_name" class="form-control"
+                           placeholder="e.g. City Lake or North Canal" value="{{ form_data.water_body_name or '' }}">
+                </div>
+
+                <div class="form-group">
+                    <label for="water_body_type" class="form-label">
+                        Water Body Type <span class="required">*</span>
+                    </label>
+                    <select id="water_body_type" name="water_body_type" class="form-select" required>
+                        <option value="" disabled {% if not form_data.water_body_type %}selected{% endif %}>Select water body type...</option>
+                        <option value="Lake" {% if form_data.water_body_type == 'Lake' %}selected{% endif %}>Lake</option>
+                        <option value="Pond" {% if form_data.water_body_type == 'Pond' %}selected{% endif %}>Pond</option>
+                        <option value="River" {% if form_data.water_body_type == 'River' %}selected{% endif %}>River</option>
+                        <option value="Stream" {% if form_data.water_body_type == 'Stream' %}selected{% endif %}>Stream</option>
+                        <option value="Canal" {% if form_data.water_body_type == 'Canal' %}selected{% endif %}>Canal</option>
+                        <option value="Other" {% if form_data.water_body_type == 'Other' %}selected{% endif %}>Other</option>
+                    </select>
+                </div>
+            </div>
+
+            <!-- Water Physical Characteristics -->
+            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1rem;">
+                <div class="form-group">
+                    <label for="water_colour" class="form-label">
+                        Water Colour <span class="required">*</span>
+                    </label>
+                    <select id="water_colour" name="water_colour" class="form-select" required>
+                        <option value="" disabled {% if not form_data.water_colour %}selected{% endif %}>Select observed color...</option>
+                        <option value="Clear" {% if form_data.water_colour == 'Clear' %}selected{% endif %}>Clear</option>
+                        <option value="Brown" {% if form_data.water_colour == 'Brown' %}selected{% endif %}>Brown</option>
+                        <option value="Green" {% if form_data.water_colour == 'Green' %}selected{% endif %}>Green</option>
+                        <option value="Dark Green" {% if form_data.water_colour == 'Dark Green' %}selected{% endif %}>Dark Green</option>
+                        <option value="Black" {% if form_data.water_colour == 'Black' %}selected{% endif %}>Black</option>
+                        <option value="Yellowish" {% if form_data.water_colour == 'Yellowish' %}selected{% endif %}>Yellowish</option>
+                        <option value="Other" {% if form_data.water_colour == 'Other' %}selected{% endif %}>Other</option>
+                    </select>
+                </div>
+
+                <div class="form-group">
+                    <label for="smell" class="form-label">
+                        Smell <span class="required">*</span>
+                    </label>
+                    <select id="smell" name="smell" class="form-select" required>
+                        <option value="" disabled {% if not form_data.smell %}selected{% endif %}>Select observed smell...</option>
+                        <option value="No unusual smell" {% if form_data.smell == 'No unusual smell' %}selected{% endif %}>No unusual smell</option>
+                        <option value="Bad smell" {% if form_data.smell == 'Bad smell' %}selected{% endif %}>Bad smell</option>
+                        <option value="Chemical smell" {% if form_data.smell == 'Chemical smell' %}selected{% endif %}>Chemical smell</option>
+                        <option value="Sewage-like smell" {% if form_data.smell == 'Sewage-like smell' %}selected{% endif %}>Sewage-like smell</option>
+                        <option value="Rotten smell" {% if form_data.smell == 'Rotten smell' %}selected{% endif %}>Rotten smell</option>
+                        <option value="Other" {% if form_data.smell == 'Other' %}selected{% endif %}>Other</option>
+                    </select>
+                </div>
+            </div>
+
+            <!-- Environmental Indicators -->
+            <div style="display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 1rem;">
+                <div class="form-group">
+                    <label for="algae" class="form-label">
+                        Is algae visible? <span class="required">*</span>
+                    </label>
+                    <select id="algae" name="algae" class="form-select" required>
+                        <option value="" disabled {% if not form_data.algae %}selected{% endif %}>Choose...</option>
+                        <option value="Yes" {% if form_data.algae == 'Yes' %}selected{% endif %}>Yes</option>
+                        <option value="No" {% if form_data.algae == 'No' %}selected{% endif %}>No</option>
+                        <option value="Not sure" {% if form_data.algae == 'Not sure' %}selected{% endif %}>Not sure</option>
+                    </select>
+                </div>
+
+                <div class="form-group">
+                    <label for="visible_waste" class="form-label">
+                        Visible Waste <span class="required">*</span>
+                    </label>
+                    <select id="visible_waste" name="visible_waste" class="form-select" required>
+                        <option value="" disabled {% if not form_data.visible_waste %}selected{% endif %}>Choose...</option>
+                        <option value="None" {% if form_data.visible_waste == 'None' %}selected{% endif %}>None</option>
+                        <option value="Low" {% if form_data.visible_waste == 'Low' %}selected{% endif %}>Low</option>
+                        <option value="Medium" {% if form_data.visible_waste == 'Medium' %}selected{% endif %}>Medium</option>
+                        <option value="High" {% if form_data.visible_waste == 'High' %}selected{% endif %}>High</option>
+                    </select>
+                </div>
+
+                <div class="form-group">
+                    <label for="water_appearance" class="form-label">
+                        Appearance <span class="required">*</span>
+                    </label>
+                    <select id="water_appearance" name="water_appearance" class="form-select" required>
+                        <option value="" disabled {% if not form_data.water_appearance %}selected{% endif %}>Choose...</option>
+                        <option value="Normal" {% if form_data.water_appearance == 'Normal' %}selected{% endif %}>Normal</option>
+                        <option value="Dirty" {% if form_data.water_appearance == 'Dirty' %}selected{% endif %}>Dirty</option>
+                        <option value="Very Dirty" {% if form_data.water_appearance == 'Very Dirty' %}selected{% endif %}>Very Dirty</option>
+                        <option value="Unusual" {% if form_data.water_appearance == 'Unusual' %}selected{% endif %}>Unusual</option>
+                        <option value="Not sure" {% if form_data.water_appearance == 'Not sure' %}selected{% endif %}>Not sure</option>
+                    </select>
+                </div>
+            </div>
+
+            <!-- Dead fish / Additional details -->
+            <div style="display: grid; grid-template-columns: 1fr 2fr; gap: 1rem;">
+                <div class="form-group">
+                    <label for="dead_fish" class="form-label">
+                        Dead fish/animals? <span class="optional">(Optional)</span>
+                    </label>
+                    <select id="dead_fish" name="dead_fish" class="form-select">
+                        <option value="No" {% if form_data.dead_fish == 'No' or not form_data.dead_fish %}selected{% endif %}>No</option>
+                        <option value="Yes" {% if form_data.dead_fish == 'Yes' %}selected{% endif %}>Yes</option>
+                        <option value="Not sure" {% if form_data.dead_fish == 'Not sure' %}selected{% endif %}>Not sure</option>
+                    </select>
+                </div>
+
+                <div class="form-group">
+                    <label for="additional_observation" class="form-label">
+                        Anything else you noticed? <span class="optional">(Optional)</span>
+                    </label>
+                    <textarea id="additional_observation" name="additional_observation" class="form-textarea" 
+                              placeholder="e.g. Construction debris, foaming water, nearby discharge pipe..." rows="2">{{ form_data.additional_observation or '' }}</textarea>
+                </div>
+            </div>
+        </div>
+
+        <!-- STEP 2: UPLOAD EVIDENCE (Section 11) -->
+        <div class="card" style="margin-bottom: 2rem;">
+            <div class="card-header" style="border-bottom: 1px solid var(--border-color); padding-bottom: 0.75rem;">
+                <h2 style="font-size: 1.2rem; font-weight: 700; color: var(--primary);">
+                    Step 2 of 3: Upload Evidence
+                </h2>
+                <p style="font-size: 0.85rem; color: var(--text-secondary); margin-top: 0.2rem;">
+                    Upload a clear photo of the water body. Your photo helps Hydria verify the report.
+                </p>
+            </div>
+
+            <div class="form-group">
+                <label for="image-input" class="form-label">
+                    Water Body Photo <span class="required">*</span>
+                    <span class="optional">(JPG, JPEG, PNG, WEBP &bull; Max 5 MB)</span>
+                </label>
+
+                <div class="image-upload-zone" onclick="document.getElementById('image-input').click();">
+                    <div style="font-size: 2.2rem; margin-bottom: 0.35rem;">📷</div>
+                    <div style="font-weight: 600; color: var(--primary);">Click or tap to choose an image</div>
+                    <div style="font-size: 0.82rem; color: var(--text-muted); margin-top: 0.25rem;">
+                        Supported formats: JPG, PNG, WEBP (Max 5MB)
+                    </div>
+                </div>
+
+                <input type="file" id="image-input" name="image" accept=".jpg,.jpeg,.png,.webp" style="display: none;">
+
+                <!-- Instant Image Preview (Section 11) -->
+                <div id="preview-container" class="preview-container" style="display: none;">
+                    <div style="font-size: 0.85rem; font-weight: 600; color: var(--text-secondary); margin-bottom: 0.5rem;">
+                        Selected Photo Preview:
+                    </div>
+                    <img id="image-preview" class="preview-img" src="" alt="Selected water body photo">
+                </div>
+            </div>
+        </div>
+
+        <!-- Submit & Validation Action -->
+        <div style="display: flex; justify-content: flex-end; gap: 1rem;">
+            <a href="{{ url_for('dashboard') }}" class="btn btn-secondary">
+                Cancel
+            </a>
+            <button type="submit" class="btn btn-primary btn-large" id="btn-validate-report">
+                Check &amp; Verify Report &rarr;
+            </button>
+        </div>
+    </form>
+</div>
+{% endblock %}

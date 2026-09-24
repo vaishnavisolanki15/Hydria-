@@ -1,0 +1,38 @@
+{% extends "base.html" %}
+
+{% block title %}Login — Hydria{% endblock %}
+
+{% block content %}
+<div class="auth-wrapper">
+    <div class="auth-header">
+        <div style="font-size: 2.5rem; margin-bottom: 0.5rem;">💧</div>
+        <h1 class="auth-title">HYDRIA</h1>
+        <p class="auth-tagline">From Citizen Observations to Water Insights.</p>
+    </div>
+
+    <div class="card">
+        <form method="POST" action="{{ url_for('login') }}">
+            <div class="form-group">
+                <label for="email" class="form-label">Email</label>
+                <input type="email" id="email" name="email" class="form-control" 
+                       placeholder="name@example.com" value="{{ email or '' }}" required autofocus>
+            </div>
+
+            <div class="form-group">
+                <label for="password" class="form-label">Password</label>
+                <input type="password" id="password" name="password" class="form-control" 
+                       placeholder="Enter your password" required>
+            </div>
+
+            <button type="submit" class="btn btn-primary btn-block btn-large" id="login-submit-btn">
+                Login
+            </button>
+        </form>
+
+        <div class="auth-footer">
+            Don't have an account? <br>
+            <a href="{{ url_for('register') }}" style="font-weight: 600;" id="create-account-link">Create account</a>
+        </div>
+    </div>
+</div>
+{% endblock %}
