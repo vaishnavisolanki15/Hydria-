@@ -390,8 +390,90 @@ def community():
 # -------------------------------------------------------------
 @app.route('/analysis-board')
 def analysis_board():
-    grouped_reports = database.get_analysis_board_reports()
-    return render_template('analysis_board.html', grouped=grouped_reports)
+    conn = database.get_db_connection()
+    query = """
+        SELECT r.*, u.name AS submitter_name,
+               (SELECT COUNT(*) FROM votes v WHERE v.report_id = r.id) AS vote_count
+        FROM reports r
+        JOIN users u ON r.user_id = u.id
+        ORDER BY r.created_at DESC
+    """
+    all_reports = conn.execute(query).fetchall()
+    conn.close()
+
+    risk_categories = {
+        'High Risk': {
+            'key': 'high-risk',
+            'title': 'High Risk',
+            'badge_text': 'High Concern',
+            'badge_class': 'badge-high-concern',
+            'card_border_class': 'card-border-high',
+            'header_class': 'risk-header-high',
+            'reports': []
+        },
+        'Medium Risk': {
+            'key': 'medium-risk',
+            'title': 'Medium Risk',
+            'badge_text': 'Medium Risk',
+            'badge_class': 'badge-medium-risk',
+            'card_border_class': 'card-border-med',
+            'header_class': 'risk-header-med',
+            'reports': []
+        },
+        'Low Risk': {
+            'key': 'low-risk',
+            'title': 'Low Risk',
+            'badge_text': 'Low Risk',
+            'badge_class': 'badge-low-risk',
+            'card_border_class': 'card-border-low',
+            'header_class': 'risk-header-low',
+            'reports': []
+        }
+    }
+
+    status_counts = {'Not Watched': 0, 'In Process': 0, 'Submitted': 0}
+    total_count = 0
+
+    for r in all_reports:
+        r_dict = dict(r)
+        insight = generate_water_insight(r_dict)
+        r_dict['insight'] = insight
+        total_count += 1
+
+        st = r_dict.get('status', 'Not Watched')
+        if st in status_counts:
+            status_counts[st] += 1
+
+        # Classify into High Risk, Medium Risk, Low Risk
+        concern = insight.get('concern_level', '')
+        if 'High' in concern:
+            risk_key = 'High Risk'
+        elif 'Moderate' in concern or 'Medium' in concern:
+            risk_key = 'Medium Risk'
+        else:
+            risk_key = 'Low Risk'
+
+        r_dict['risk_category'] = risk_key
+        risk_categories[risk_key]['reports'].append(r_dict)
+
+    return render_template(
+        'analysis_board.html',
+        risk_categories=risk_categories,
+        total_count=total_count,
+        status_counts=status_counts
+    )
+
+
+@app.route('/analysis-board/status/<int:report_id>', methods=['POST'])
+def update_report_status_route(report_id):
+    new_status = request.form.get('status') or (request.get_json(silent=True) or {}).get('status')
+    if new_status in ['Not Watched', 'In Process', 'Submitted']:
+        database.update_report_status(report_id, new_status)
+        if request.headers.get('X-Requested-With') == 'XMLHttpRequest' or request.is_json:
+            return jsonify({'success': True, 'report_id': report_id, 'new_status': new_status})
+        flash(f"Report status moved to '{new_status}'.", "success")
+    return redirect(url_for('analysis_board'))
+
 
 # -------------------------------------------------------------
 # Page 8: Report Details Page

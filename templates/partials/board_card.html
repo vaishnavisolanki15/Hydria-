@@ -1,0 +1,144 @@
+<div class="board-card" 
+     id="card-{{ r.id }}"
+     data-status="{{ r.status }}"
+     data-concern="{{ r.insight.concern_level }}"
+     data-algae="{{ r.algae }}"
+     data-waste="{{ r.visible_waste }}"
+     data-type="{{ r.water_body_type }}">
+
+    <!-- Card Visual Media Header -->
+    <div class="board-card-media">
+        <img src="/{{ r.image_path }}" 
+             alt="{{ r.water_body_name or r.water_body_type }}" 
+             class="board-card-img" 
+             loading="lazy"
+             onerror="this.src='/static/images/placeholder.svg';">
+        <div class="board-card-overlay"></div>
+
+        <!-- Top Badges Overlay -->
+        <div class="board-card-badges-top">
+            <span class="board-type-tag">
+                {% if r.water_body_type == 'Lake' %}🌊
+                {% elif r.water_body_type == 'Pond' %}🏞️
+                {% elif r.water_body_type == 'Canal' %}🛶
+                {% elif r.water_body_type == 'River' %}🏞️
+                {% else %}💧{% endif %}
+                {{ r.water_body_type }}
+            </span>
+
+            {% if r.insight.concern_level == 'High Concern' %}
+                <span class="board-concern-badge concern-high">
+                    <span>🔴</span> High Concern
+                </span>
+            {% elif r.insight.concern_level == 'Moderate Concern' %}
+                <span class="board-concern-badge concern-med">
+                    <span>🟠</span> Moderate
+                </span>
+            {% else %}
+                <span class="board-concern-badge concern-low">
+                    <span>🟢</span> Normal
+                </span>
+            {% endif %}
+        </div>
+
+        <!-- Bottom Badges Overlay -->
+        <div class="board-card-badges-bottom">
+            <span class="board-color-swatch-pill" 
+                  style="background: {{ r.color_meta.bg }}; color: {{ r.color_meta.color }}; border: 1px solid {{ r.color_meta.dot }}50;">
+                <span class="board-color-dot" style="background: {{ r.color_meta.dot }};"></span>
+                {{ r.water_colour }} Water
+            </span>
+
+            <span class="board-submitter-pill">
+                <span>👤</span> {{ r.submitter_name.split(' ')[0] if r.submitter_name else 'Citizen' }}
+            </span>
+        </div>
+    </div>
+
+    <!-- Card Content Body -->
+    <div class="board-card-body">
+        <div class="board-card-title-row">
+            <a href="{{ url_for('report_detail', report_id=r.id) }}" class="board-card-title">
+                {{ r.water_body_name or "Unnamed " ~ r.water_body_type }}
+            </a>
+        </div>
+
+        <div class="board-card-meta">
+            <span>📅 {{ r.created_at[:10] }}</span>
+            <span>📍 {{ "%.4f"|format(r.latitude) }}, {{ "%.4f"|format(r.longitude) }}</span>
+        </div>
+
+        <!-- Visual Sensory Chips -->
+        <div class="board-chips-wrap">
+            <span class="board-chip chip-odor">
+                <span>🦨</span> {{ r.smell }}
+            </span>
+
+            {% if r.algae == 'Yes' %}
+                <span class="board-chip chip-algae-yes">
+                    <span>🌿</span> Algae Bloom
+                </span>
+            {% else %}
+                <span class="board-chip chip-neutral">
+                    <span>🌱</span> No Algae
+                </span>
+            {% endif %}
+
+            {% if r.visible_waste == 'High' %}
+                <span class="board-chip chip-waste-high">
+                    <span>🗑️</span> High Waste
+                </span>
+            {% elif r.visible_waste == 'Medium' %}
+                <span class="board-chip chip-waste-med">
+                    <span>📦</span> Med Waste
+                </span>
+            {% else %}
+                <span class="board-chip chip-neutral">
+                    <span>✨</span> Low Waste
+                </span>
+            {% endif %}
+
+            {% if r.dead_fish == 'Yes' %}
+                <span class="board-chip chip-alert-hazard">
+                    <span>⚠️</span> Dead Wildlife Alert
+                </span>
+            {% endif %}
+
+            <span class="board-chip chip-neutral">
+                <span>👁️</span> {{ r.water_appearance }}
+            </span>
+        </div>
+
+        <!-- Diagnostic Insight Box -->
+        <div class="board-card-insight">
+            <div class="board-card-insight-header">
+                <span>💧</span> Hydria Diagnostic Insight
+            </div>
+            <div>{{ r.insight.summary }}</div>
+        </div>
+    </div>
+
+    <!-- Card Action Footer -->
+    <div class="board-card-footer">
+        <span class="board-votes-pill" title="Community Confirmations">
+            👍 {{ r.vote_count }}
+        </span>
+
+        <div class="board-status-select-wrap">
+            <select class="board-status-select" 
+                    title="Change workflow review stage"
+                    data-original-status="{{ r.status }}"
+                    onchange="updateBoardCardStatus({{ r.id }}, this.value, this)">
+                <option value="Not Watched" {% if r.status == 'Not Watched' %}selected{% endif %}>⚪ Not Watched</option>
+                <option value="In Process" {% if r.status == 'In Process' %}selected{% endif %}>🟡 In Process</option>
+                <option value="Submitted" {% if r.status == 'Submitted' %}selected{% endif %}>🟢 Submitted</option>
+            </select>
+
+            <a href="{{ url_for('report_detail', report_id=r.id) }}" 
+               class="btn btn-secondary btn-sm" 
+               style="padding: 0.28rem 0.65rem; font-size: 0.78rem; font-weight: 600; white-space: nowrap;">
+                View &rarr;
+            </a>
+        </div>
+    </div>
+</div>

@@ -6,12 +6,12 @@
 <!-- Welcome & Primary Action Section (Section 7 & 35) -->
 <section class="dashboard-hero">
     <div class="dashboard-hero-text">
-        <h1>Welcome, {{ current_user.name }} 👋</h1>
+        <h1>Welcome, {{ current_user.name }}</h1>
         <p>Help your community understand the condition of local freshwater ecosystems by submitting simple observations.</p>
     </div>
     <div>
         <a href="{{ url_for('report_page') }}" class="btn btn-primary btn-large" id="btn-report-water-body">
-            + Report Water Body
+            Report Water Body
         </a>
     </div>
 </section>
@@ -77,7 +77,7 @@
                 You haven't submitted any water body observations yet. Spot an urban lake, pond, or stream and be the first to report!
             </p>
             <a href="{{ url_for('report_page') }}" class="btn btn-primary">
-                + Report a Water Body Now
+                Report a Water Body Now
             </a>
         </div>
     {% endif %}

@@ -17,7 +17,7 @@
                class="form-control" style="width: 250px; padding: 0.5rem 0.85rem; font-size: 0.88rem;" onkeyup="filterCommunityReports()">
         {% if current_user %}
             <a href="{{ url_for('report_page') }}" class="btn btn-primary" style="white-space: nowrap;">
-                + Report Water Body
+                Report Water Body
             </a>
         {% endif %}
     </div>
@@ -27,8 +27,14 @@
     <div class="reports-grid">
         {% for r in reports %}
             <div class="report-card">
-                <img src="/{{ r.image_path }}" alt="{{ r.water_body_name or r.water_body_type }}" class="report-card-img" 
-                     onerror="this.src='/static/images/placeholder.svg';">
+                <div style="position: relative; overflow: hidden; height: 200px; background: #0f172a;">
+                    <img src="/{{ r.image_path }}" alt="{{ r.water_body_name or r.water_body_type }}" class="report-card-img" 
+                         loading="lazy"
+                         onerror="this.src='/static/images/placeholder.svg';">
+                    <span style="position: absolute; top: 10px; left: 10px; background: rgba(15, 23, 42, 0.7); backdrop-filter: blur(6px); color: #ffffff; font-size: 0.75rem; font-weight: 700; padding: 0.25rem 0.65rem; border-radius: 9999px; border: 1px solid rgba(255,255,255,0.15);">
+                        {{ r.water_body_type }}
+                    </span>
+                </div>
                 
                 <div class="report-card-body">
                     <div style="display: flex; align-items: flex-start; justify-content: space-between; gap: 0.5rem; margin-bottom: 0.35rem;">
@@ -79,7 +85,7 @@
         </p>
         {% if current_user %}
             <a href="{{ url_for('report_page') }}" class="btn btn-primary">
-                + Report a Water Body
+                Report a Water Body
             </a>
         {% endif %}
     </div>

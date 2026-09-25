@@ -280,6 +280,23 @@ def get_analysis_board_reports():
             grouped['Not Watched'].append(r)
     return grouped
 
+def update_report_status(report_id, new_status):
+    """Update report workflow review status ('Not Watched', 'In Process', 'Submitted')."""
+    valid_statuses = ('Not Watched', 'In Process', 'Submitted')
+    if new_status not in valid_statuses:
+        return False
+    conn = get_db_connection()
+    cursor = conn.cursor()
+    cursor.execute(
+        "UPDATE reports SET status = ?, updated_at = CURRENT_TIMESTAMP WHERE id = ?",
+        (new_status, report_id)
+    )
+    affected = cursor.rowcount
+    conn.commit()
+    conn.close()
+    return affected > 0
+
+
 def get_all_image_hashes():
     """Return list of all existing image hashes to check duplicates."""
     conn = get_db_connection()

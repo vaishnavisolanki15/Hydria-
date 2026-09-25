@@ -1,154 +1,297 @@
 {% extends "base.html" %}
 
-{% block title %}Analysis Board — Hydria{% endblock %}
+{% block title %}Reports — Hydria Freshwater Intelligence{% endblock %}
 
 {% block content %}
-<div style="margin-bottom: 2rem;">
-    <h1 style="font-size: 1.85rem; font-weight: 800; color: var(--text-primary); margin-bottom: 0.35rem;">
-        Hydria Analysis Board
-    </h1>
-    <p style="color: var(--text-secondary); font-size: 0.95rem;">
-        Track reports across the three review workflow stages: Not Watched, In Process, and Submitted.
-    </p>
+<!-- Page Title Bar -->
+<div class="reports-title-bar">
+    <div>
+        <h1 class="reports-page-title">Reports</h1>
+        <p class="reports-page-subtitle">Water quality analysis and risk assessment reports</p>
+    </div>
+    <div class="reports-total-count">
+        Total Reports: <span id="total-reports-num">{{ total_count }}</span>
+    </div>
 </div>
 
-<!-- Three Column Layout (Section 21 & 36) -->
-<div class="board-grid">
+<!-- Search & Status Filter Controls -->
+<div class="reports-filter-bar">
+    <!-- Live Search Input -->
+    <div class="reports-search-wrap">
+        <span class="reports-search-icon">🔍</span>
+        <input type="text" id="reports-search" class="reports-search-input" 
+               placeholder="Search by water body, odor, observations..." 
+               onkeyup="applyAllFilters()">
+    </div>
+
+    <!-- Filter Controls on Right -->
+    <div class="reports-filter-controls">
+        <!-- Status Dropdown Menu -->
+        <div class="status-dropdown-wrap">
+            <button type="button" class="btn-status-dropdown" id="status-dropdown-btn" onclick="toggleStatusDropdown(event)">
+                <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                    <polygon points="22 3 2 3 10 12.46 10 19 14 21 14 12.46 22 3"></polygon>
+                </svg>
+                <span id="selected-status-label">Filter by Status</span>
+                <span style="font-size: 0.65rem; color: #64748b; margin-left: 2px;">▼</span>
+            </button>
+            <div class="status-dropdown-menu" id="status-dropdown-menu">
+                <div class="status-dropdown-item active" onclick="selectStatusFilter('All', 'Filter by Status')">All Statuses</div>
+                <div class="status-dropdown-item" onclick="selectStatusFilter('Not Watched', 'Not Watched')">Not Watched</div>
+                <div class="status-dropdown-item" onclick="selectStatusFilter('In Process', 'In Process')">In Process</div>
+                <div class="status-dropdown-item" onclick="selectStatusFilter('Submitted', 'Submitted')">Submitted</div>
+            </div>
+        </div>
+
+        <!-- Status Radio Pills -->
+        <div class="status-radio-group">
+            <button type="button" class="status-radio-pill" data-status="Not Watched" onclick="toggleStatusPill('Not Watched', this)">
+                <span class="radio-circle"></span> Not Watched
+            </button>
+            <button type="button" class="status-radio-pill" data-status="In Process" onclick="toggleStatusPill('In Process', this)">
+                <span class="radio-circle"></span> In Process
+            </button>
+            <button type="button" class="status-radio-pill" data-status="Submitted" onclick="toggleStatusPill('Submitted', this)">
+                <span class="radio-circle"></span> Submitted
+            </button>
+        </div>
+    </div>
+</div>
+
+<!-- Three Risk Category Sections -->
+{% for cat_key, cat_data in risk_categories.items() %}
+<section class="risk-section" id="section-{{ cat_data.key }}" data-risk-key="{{ cat_key }}">
     
-    <!-- COLUMN 1: NOT WATCHED -->
-    <div class="board-column">
-        <div class="board-col-header">
-            <div style="display: flex; align-items: center; gap: 0.5rem;">
-                <span style="color: #64748b;">⚪</span>
-                <span class="board-col-title">Not Watched</span>
-            </div>
-            <span class="board-col-count">{{ grouped['Not Watched']|length }}</span>
+    <!-- Category Header Bar -->
+    <div class="risk-section-header {{ cat_data.header_class }}">
+        <div style="display: flex; align-items: baseline;">
+            <span class="risk-header-title">{{ cat_data.title }}</span>
+            <span class="risk-header-count" id="count-{{ cat_data.key }}">{{ cat_data.reports|length }} reports</span>
         </div>
-
-        {% if grouped['Not Watched'] %}
-            {% for r in grouped['Not Watched'] %}
-                <div class="board-card">
-                    <div style="font-weight: 700; font-size: 1.05rem; color: var(--text-primary); margin-bottom: 0.25rem;">
-                        Water Body: {{ r.water_body_name or "Unnamed " ~ r.water_body_type }}
-                    </div>
-                    <div style="font-size: 0.8rem; color: var(--text-muted); margin-bottom: 0.6rem;">
-                        Reported: {{ r.created_at[:10] }}
-                    </div>
-
-                    <div style="font-size: 0.85rem; line-height: 1.5; color: var(--text-secondary); margin-bottom: 0.75rem;">
-                        <div><strong>Water:</strong> {{ r.water_colour }}</div>
-                        <div><strong>Smell:</strong> {{ r.smell }}</div>
-                        <div><strong>Algae:</strong> {{ r.algae }}</div>
-                        <div><strong>Waste:</strong> {{ r.visible_waste }}</div>
-                        <div style="margin-top: 0.25rem;">
-                            <strong>Status:</strong> <span class="badge badge-not-watched">{{ r.status }}</span>
-                        </div>
-                    </div>
-
-                    <div style="display: flex; align-items: center; justify-content: space-between; padding-top: 0.6rem; border-top: 1px solid var(--border-color); font-size: 0.85rem;">
-                        <span><strong>Votes:</strong> {{ r.vote_count }}</span>
-                        <a href="{{ url_for('report_detail', report_id=r.id) }}" class="btn btn-secondary" style="padding: 0.25rem 0.65rem; font-size: 0.8rem;">
-                            View
-                        </a>
-                    </div>
-                </div>
-            {% endfor %}
-        {% else %}
-            <div style="text-align: center; color: var(--text-muted); font-size: 0.88rem; padding: 2rem 1rem;">
-                No reports in this queue.
-            </div>
-        {% endif %}
     </div>
 
-    <!-- COLUMN 2: IN PROCESS -->
-    <div class="board-column">
-        <div class="board-col-header">
-            <div style="display: flex; align-items: center; gap: 0.5rem;">
-                <span style="color: #d97706;">🟡</span>
-                <span class="board-col-title">In Process</span>
-            </div>
-            <span class="board-col-count">{{ grouped['In Process']|length }}</span>
-        </div>
-
-        {% if grouped['In Process'] %}
-            {% for r in grouped['In Process'] %}
-                <div class="board-card" style="border-left: 3px solid var(--warning);">
-                    <div style="font-weight: 700; font-size: 1.05rem; color: var(--text-primary); margin-bottom: 0.25rem;">
-                        Water Body: {{ r.water_body_name or "Unnamed " ~ r.water_body_type }}
-                    </div>
-                    <div style="font-size: 0.8rem; color: var(--text-muted); margin-bottom: 0.6rem;">
-                        Reported: {{ r.created_at[:10] }}
-                    </div>
-
-                    <div style="font-size: 0.85rem; line-height: 1.5; color: var(--text-secondary); margin-bottom: 0.75rem;">
-                        <div><strong>Water:</strong> {{ r.water_colour }}</div>
-                        <div><strong>Smell:</strong> {{ r.smell }}</div>
-                        <div><strong>Algae:</strong> {{ r.algae }}</div>
-                        <div><strong>Waste:</strong> {{ r.visible_waste }}</div>
-                        <div style="margin-top: 0.25rem;">
-                            <strong>Status:</strong> <span class="badge badge-in-process">{{ r.status }}</span>
-                        </div>
-                    </div>
-
-                    <div style="display: flex; align-items: center; justify-content: space-between; padding-top: 0.6rem; border-top: 1px solid var(--border-color); font-size: 0.85rem;">
-                        <span><strong>Votes:</strong> {{ r.vote_count }}</span>
-                        <a href="{{ url_for('report_detail', report_id=r.id) }}" class="btn btn-secondary" style="padding: 0.25rem 0.65rem; font-size: 0.8rem;">
-                            View
-                        </a>
-                    </div>
+    <!-- Category Cards Grid -->
+    <div class="risk-cards-grid" id="grid-{{ cat_data.key }}">
+        {% for r in cat_data.reports %}
+            <div class="report-risk-card {{ cat_data.card_border_class }} {% if loop.index > 3 %}card-hidden-by-default{% endif %}"
+                 data-report-id="{{ r.id }}"
+                 data-status="{{ r.status }}"
+                 data-risk="{{ cat_key }}"
+                 data-index="{{ loop.index }}"
+                 data-search-text="{{ (r.water_body_name ~ ' ' ~ r.water_body_type ~ ' ' ~ r.water_colour ~ ' ' ~ r.smell ~ ' ' ~ (r.additional_observation or '') ~ ' ' ~ r.insight.summary)|lower }}"
+                 onclick="window.location='{{ url_for('report_detail', report_id=r.id) }}'">
+                
+                <!-- Row 1: Water Body Title & Risk Badge -->
+                <div class="card-row-top">
+                    <a href="{{ url_for('report_detail', report_id=r.id) }}" class="card-title-link" onclick="event.stopPropagation();">
+                        {{ r.water_body_name or "Unnamed " ~ r.water_body_type }}
+                    </a>
+                    <span class="risk-badge {{ cat_data.badge_class }}">
+                        {{ cat_data.badge_text }}
+                    </span>
                 </div>
-            {% endfor %}
-        {% else %}
-            <div style="text-align: center; color: var(--text-muted); font-size: 0.88rem; padding: 2rem 1rem;">
-                No reports in this queue.
+
+                <!-- Row 2: Water Body Type Tag -->
+                <div>
+                    <span class="card-type-pill">{{ r.water_body_type }}</span>
+                </div>
+
+                <!-- Row 3: Date & Coordinates -->
+                <div class="card-meta-line">
+                    <span>📅 {{ r.created_at[:10] }}</span>
+                    <span>📍 {{ "%.4f"|format(r.latitude) }}, {{ "%.4f"|format(r.longitude) }}</span>
+                </div>
+
+                <!-- Row 4: Insight Block -->
+                <div class="card-insight-block">
+                    <div class="card-insight-label">Insight</div>
+                    <div class="card-insight-text">{{ r.insight.summary }}</div>
+                </div>
             </div>
-        {% endif %}
+        {% endfor %}
     </div>
 
-    <!-- COLUMN 3: SUBMITTED -->
-    <div class="board-column">
-        <div class="board-col-header">
-            <div style="display: flex; align-items: center; gap: 0.5rem;">
-                <span style="color: #059669;">🟢</span>
-                <span class="board-col-title">Submitted</span>
-            </div>
-            <span class="board-col-count">{{ grouped['Submitted']|length }}</span>
+    <!-- View More Button for categories with > 3 cards -->
+    {% if cat_data.reports|length > 3 %}
+        <div class="view-more-container" id="more-container-{{ cat_data.key }}">
+            <button type="button" class="btn-view-more" 
+                    id="btn-more-{{ cat_data.key }}"
+                    data-expanded="false"
+                    data-hidden-count="{{ cat_data.reports|length - 3 }}"
+                    onclick="toggleViewMore('{{ cat_data.key }}', this)">
+                <span class="btn-more-symbol">+</span>
+                <span class="btn-more-label">View More ({{ cat_data.reports|length - 3 }} more)</span>
+            </button>
         </div>
+    {% endif %}
 
-        {% if grouped['Submitted'] %}
-            {% for r in grouped['Submitted'] %}
-                <div class="board-card" style="border-left: 3px solid var(--accent);">
-                    <div style="font-weight: 700; font-size: 1.05rem; color: var(--text-primary); margin-bottom: 0.25rem;">
-                        Water Body: {{ r.water_body_name or "Unnamed " ~ r.water_body_type }}
-                    </div>
-                    <div style="font-size: 0.8rem; color: var(--text-muted); margin-bottom: 0.6rem;">
-                        Reported: {{ r.created_at[:10] }}
-                    </div>
+</section>
+{% endfor %}
 
-                    <div style="font-size: 0.85rem; line-height: 1.5; color: var(--text-secondary); margin-bottom: 0.75rem;">
-                        <div><strong>Water:</strong> {{ r.water_colour }}</div>
-                        <div><strong>Smell:</strong> {{ r.smell }}</div>
-                        <div><strong>Algae:</strong> {{ r.algae }}</div>
-                        <div><strong>Waste:</strong> {{ r.visible_waste }}</div>
-                        <div style="margin-top: 0.25rem;">
-                            <strong>Status:</strong> <span class="badge badge-submitted">{{ r.status }}</span>
-                        </div>
-                    </div>
+{% endblock %}
 
-                    <div style="display: flex; align-items: center; justify-content: space-between; padding-top: 0.6rem; border-top: 1px solid var(--border-color); font-size: 0.85rem;">
-                        <span><strong>Votes:</strong> {{ r.vote_count }}</span>
-                        <a href="{{ url_for('report_detail', report_id=r.id) }}" class="btn btn-secondary" style="padding: 0.25rem 0.65rem; font-size: 0.8rem;">
-                            View
-                        </a>
-                    </div>
-                </div>
-            {% endfor %}
-        {% else %}
-            <div style="text-align: center; color: var(--text-muted); font-size: 0.88rem; padding: 2rem 1rem;">
-                No reports in this queue.
-            </div>
-        {% endif %}
-    </div>
+{% block scripts %}
+<script>
+    let activeStatusFilter = 'All';
 
-</div>
+    // Toggle Dropdown Menu
+    function toggleStatusDropdown(e) {
+        e.stopPropagation();
+        const menu = document.getElementById('status-dropdown-menu');
+        if (!menu) return;
+        menu.style.display = (menu.style.display === 'block') ? 'none' : 'block';
+    }
+
+    // Close Dropdown when clicking outside
+    document.addEventListener('click', function(e) {
+        const menu = document.getElementById('status-dropdown-menu');
+        const btn = document.getElementById('status-dropdown-btn');
+        if (menu && !menu.contains(e.target) && (!btn || !btn.contains(e.target))) {
+            menu.style.display = 'none';
+        }
+    });
+
+    // Select Status from Dropdown
+    function selectStatusFilter(status, label) {
+        activeStatusFilter = status;
+        document.getElementById('selected-status-label').textContent = label;
+        
+        // Update menu items active class
+        document.querySelectorAll('.status-dropdown-item').forEach(item => {
+            item.classList.toggle('active', item.textContent.trim() === label || (status === 'All' && item.textContent.trim() === 'All Statuses'));
+        });
+
+        // Sync radio pills
+        document.querySelectorAll('.status-radio-pill').forEach(pill => {
+            pill.classList.toggle('active', pill.getAttribute('data-status') === status);
+        });
+
+        const menu = document.getElementById('status-dropdown-menu');
+        if (menu) menu.style.display = 'none';
+
+        applyAllFilters();
+    }
+
+    // Toggle Status Radio Pill
+    function toggleStatusPill(status, pillEl) {
+        if (activeStatusFilter === status) {
+            // Deselect and reset to All
+            selectStatusFilter('All', 'Filter by Status');
+        } else {
+            selectStatusFilter(status, status);
+        }
+    }
+
+    // Toggle View More / Show Less for categories > 3 cards
+    function toggleViewMore(catKey, btn) {
+        const grid = document.getElementById(`grid-${catKey}`);
+        if (!grid) return;
+
+        const isExpanded = btn.getAttribute('data-expanded') === 'true';
+        const hiddenCount = btn.getAttribute('data-hidden-count') || '1';
+        const cards = grid.querySelectorAll('.report-risk-card');
+
+        if (!isExpanded) {
+            // Expand: reveal hidden cards
+            cards.forEach(card => {
+                if (card.classList.contains('card-hidden-by-default')) {
+                    card.classList.remove('card-hidden-by-default');
+                    card.setAttribute('data-was-hidden-by-default', 'true');
+                }
+            });
+            btn.setAttribute('data-expanded', 'true');
+            btn.querySelector('.btn-more-symbol').textContent = '⌃';
+            btn.querySelector('.btn-more-label').textContent = 'Show Less';
+        } else {
+            // Collapse: hide cards with index > 3
+            cards.forEach(card => {
+                const idx = parseInt(card.getAttribute('data-index') || '1', 10);
+                if (idx > 3) {
+                    card.classList.add('card-hidden-by-default');
+                }
+            });
+            btn.setAttribute('data-expanded', 'false');
+            btn.querySelector('.btn-more-symbol').textContent = '+';
+            btn.querySelector('.btn-more-label').textContent = `View More (${hiddenCount} more)`;
+        }
+
+        applyAllFilters();
+    }
+
+    // Combined live search & status filter
+    function applyAllFilters() {
+        const searchInput = document.getElementById('reports-search');
+        const query = searchInput ? searchInput.value.toLowerCase().trim() : '';
+
+        const sections = document.querySelectorAll('.risk-section');
+        let grandTotalVisible = 0;
+
+        sections.forEach(sec => {
+            const catKey = sec.getAttribute('data-risk-key');
+            const catGrid = sec.querySelector('.risk-cards-grid');
+            const cards = catGrid ? catGrid.querySelectorAll('.report-risk-card') : [];
+            const moreBtn = sec.querySelector('.btn-view-more');
+            const isExpanded = moreBtn ? moreBtn.getAttribute('data-expanded') === 'true' : false;
+
+            let sectionCount = 0;
+            let matchingCards = [];
+
+            cards.forEach(card => {
+                const cardStatus = card.getAttribute('data-status') || '';
+                const cardText = card.getAttribute('data-search-text') || '';
+
+                const matchesStatus = (activeStatusFilter === 'All' || cardStatus === activeStatusFilter);
+                const matchesSearch = !query || cardText.includes(query);
+
+                if (matchesStatus && matchesSearch) {
+                    matchingCards.push(card);
+                    sectionCount++;
+                } else {
+                    card.style.display = 'none';
+                }
+            });
+
+            // Display logic for matching cards:
+            // If actively searching or status filtered, show all matching cards
+            // Otherwise, respect the 3-cards initial limit if not expanded
+            matchingCards.forEach((card, idx) => {
+                if (query || activeStatusFilter !== 'All') {
+                    card.style.display = 'flex';
+                } else {
+                    const cardIdx = parseInt(card.getAttribute('data-index') || '1', 10);
+                    if (!isExpanded && cardIdx > 3) {
+                        card.style.display = 'none';
+                    } else {
+                        card.style.display = 'flex';
+                    }
+                }
+            });
+
+            // Update section count badge
+            const countEl = document.getElementById(`count-${catKey.toLowerCase().replace(' ', '-')}`);
+            if (countEl) {
+                countEl.textContent = `${sectionCount} reports`;
+            }
+
+            // Hide/show section if 0 matches
+            sec.style.display = (sectionCount > 0) ? 'block' : 'none';
+
+            // Hide/show view more button if actively searching or filtering
+            const moreWrap = sec.querySelector('.view-more-container');
+            if (moreWrap) {
+                if (query || activeStatusFilter !== 'All' || sectionCount <= 3) {
+                    moreWrap.style.display = 'none';
+                } else {
+                    moreWrap.style.display = 'flex';
+                }
+            }
+
+            grandTotalVisible += sectionCount;
+        });
+
+        // Update total counter in title bar
+        const totalEl = document.getElementById('total-reports-num');
+        if (totalEl) totalEl.textContent = grandTotalVisible;
+    }
+</script>
 {% endblock %}

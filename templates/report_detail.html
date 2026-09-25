@@ -76,288 +76,346 @@
     </div>
 </div>
 
-<!-- Two-Column Master Grid Layout -->
-<div class="report-master-grid">
-
-    <!-- LEFT COLUMN: PHOTO EVIDENCE & GEOLOCATION -->
-    <div>
-        <!-- Photo Evidence Card -->
-        <div class="evidence-card">
-            <div class="evidence-img-container">
-                <span class="evidence-badge-overlay">Field Photographic Evidence</span>
-                <img src="/{{ report.image_path }}" alt="{{ report.water_body_name or report.water_body_type }}"
-                     class="evidence-img" onerror="this.src='/static/images/placeholder.svg';">
-            </div>
-            <div class="evidence-footer-bar">
-                <div style="display: flex; align-items: center; gap: 0.4rem;">
-                    <span style="font-size: 0.78rem; font-weight: 600; text-transform: uppercase;">Perceptual Hash:</span>
-                    <span class="evidence-hash-chip" title="Calculated 64-bit dHash perceptual fingerprint">
-                        {{ report.image_hash[:16] }}...
-                    </span>
-                </div>
-                <a href="/{{ report.image_path }}" target="_blank" class="btn btn-secondary btn-sm" style="font-size: 0.78rem;">
-                    View Fullscreen ↗
-                </a>
-            </div>
+<!-- Top Section: Equal-Size Photo Evidence & Physical Observations -->
+<div class="report-top-equal-grid">
+    <!-- LEFT: FIELD PHOTOGRAPHIC EVIDENCE -->
+    <div class="evidence-card">
+        <div class="evidence-img-container">
+            <span class="evidence-badge-overlay">Field Photographic Evidence</span>
+            <img src="/{{ report.image_path }}" alt="{{ report.water_body_name or report.water_body_type }}"
+                 class="evidence-img" onerror="this.src='/static/images/placeholder.svg';">
         </div>
-
-        <!-- Verified Geolocation Card -->
-        <div class="location-card">
-            <div class="location-card-header">
-                <div class="location-card-title">
-                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="var(--primary)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                        <path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"/>
-                        <circle cx="12" cy="10" r="3"/>
-                    </svg>
-                    <span>Verified Geolocation</span>
-                </div>
-                <span style="font-size: 0.75rem; color: #059669; font-weight: 700; background: #ecfdf5; border: 1px solid #a7f3d0; padding: 0.15rem 0.5rem; border-radius: var(--radius-full);">
-                    ✓ GPS Confirmed
+        <div class="evidence-footer-bar">
+            <div style="display: flex; align-items: center; gap: 0.4rem;">
+                <span style="font-size: 0.78rem; font-weight: 600; text-transform: uppercase;">Perceptual Hash:</span>
+                <span class="evidence-hash-chip" title="Calculated 64-bit dHash perceptual fingerprint">
+                    {{ report.image_hash[:16] }}...
                 </span>
             </div>
-
-            <div class="coord-grid">
-                <div class="coord-box">
-                    <div class="coord-label">Latitude (N/S)</div>
-                    <div class="coord-val">{{ report.latitude }}</div>
-                </div>
-                <div class="coord-box">
-                    <div class="coord-label">Longitude (E/W)</div>
-                    <div class="coord-val">{{ report.longitude }}</div>
-                </div>
-            </div>
-
-            <!-- External Map Quick Link -->
-            <a href="https://www.openstreetmap.org/?mlat={{ report.latitude }}&mlon={{ report.longitude }}#map=16/{{ report.latitude }}/{{ report.longitude }}" 
-               target="_blank" rel="noopener noreferrer" class="btn btn-secondary btn-block" style="font-size: 0.85rem;" id="link-external-map">
-                <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                    <polygon points="1 6 1 22 8 18 16 22 23 18 23 2 16 6 8 2 1 6"/>
-                    <line x1="8" y1="2" x2="8" y2="18"/>
-                    <line x1="16" y1="6" x2="16" y2="22"/>
-                </svg>
-                Inspect on OpenStreetMap ↗
+            <a href="/{{ report.image_path }}" target="_blank" class="btn btn-secondary btn-sm" style="font-size: 0.78rem;">
+                View Fullscreen ↗
             </a>
-
-            <div style="margin-top: 0.75rem; font-size: 0.8rem; color: var(--text-muted); text-align: center;">
-                Captured automatically via device browser sensor at time of report.
-            </div>
         </div>
     </div>
 
-    <!-- RIGHT COLUMN: STRUCTURED OBSERVATIONS & HYDRIA INSIGHTS -->
-    <div>
-        <!-- Visual Physical Observations Dashboard -->
-        <div class="obs-section-card">
-            <div class="section-head-strip">
-                <h2 class="section-head-title">Physical Water Observations</h2>
-                <span style="font-size: 0.8rem; color: var(--text-muted); font-weight: 600;">
-                    6 Verified Sensory Metrics
-                </span>
-            </div>
-
-            <div class="obs-tiles-grid">
-                <!-- Tile 1: Water Colour -->
-                <div class="obs-tile">
-                    <div class="obs-tile-top">
-                        <span class="obs-tile-label">Water Colour</span>
-                    </div>
-                    <div>
-                        <div class="obs-tile-val">
-                            {% if report.water_colour == 'Green' %}
-                                <span class="obs-color-dot" style="background-color: #16a34a;"></span>
-                            {% elif report.water_colour == 'Dark Green' %}
-                                <span class="obs-color-dot" style="background-color: #14532d;"></span>
-                            {% elif report.water_colour == 'Brown' %}
-                                <span class="obs-color-dot" style="background-color: #78350f;"></span>
-                            {% elif report.water_colour == 'Black' %}
-                                <span class="obs-color-dot" style="background-color: #1e293b;"></span>
-                            {% elif report.water_colour == 'Yellowish' %}
-                                <span class="obs-color-dot" style="background-color: #ca8a04;"></span>
-                            {% elif report.water_colour == 'Clear' %}
-                                <span class="obs-color-dot" style="background-color: #38bdf8;"></span>
-                            {% else %}
-                                <span class="obs-color-dot" style="background-color: #64748b;"></span>
-                            {% endif %}
-                            <span>{{ report.water_colour }}</span>
-                        </div>
-                    </div>
-                </div>
-
-                <!-- Tile 2: Smell / Odor -->
-                <div class="obs-tile">
-                    <div class="obs-tile-top">
-                        <span class="obs-tile-label">Odor / Smell</span>
-                    </div>
-                    <div>
-                        <div class="obs-tile-val" style="font-size: 0.95rem;">
-                            {{ report.smell }}
-                        </div>
-                    </div>
-                </div>
-
-                <!-- Tile 3: Visible Algae -->
-                <div class="obs-tile">
-                    <div class="obs-tile-top">
-                        <span class="obs-tile-label">Visible Algae</span>
-                    </div>
-                    <div>
-                        <div class="obs-tile-val">
-                            {% if report.algae == 'Yes' %}
-                                <span style="color: #059669; font-weight: 700;">Yes</span>
-                            {% elif report.algae == 'No' %}
-                                <span style="color: var(--text-muted);">No</span>
-                            {% else %}
-                                <span style="color: #d97706;">Unsure</span>
-                            {% endif %}
-                        </div>
-                    </div>
-                </div>
-
-                <!-- Tile 4: Visible Waste -->
-                <div class="obs-tile">
-                    <div class="obs-tile-top">
-                        <span class="obs-tile-label">Surface Waste</span>
-                    </div>
-                    <div>
-                        <div class="obs-tile-val">{{ report.visible_waste }}</div>
-                        <div class="obs-waste-indicator">
-                            <span class="waste-bar {% if report.visible_waste in ['Low', 'Medium', 'High'] %}active-low{% endif %}"></span>
-                            <span class="waste-bar {% if report.visible_waste in ['Medium', 'High'] %}active-med{% endif %}"></span>
-                            <span class="waste-bar {% if report.visible_waste == 'High' %}active-high{% endif %}"></span>
-                        </div>
-                    </div>
-                </div>
-
-                <!-- Tile 5: Overall Appearance -->
-                <div class="obs-tile">
-                    <div class="obs-tile-top">
-                        <span class="obs-tile-label">Appearance</span>
-                    </div>
-                    <div>
-                        <div class="obs-tile-val">{{ report.water_appearance }}</div>
-                    </div>
-                </div>
-
-                <!-- Tile 6: Dead Fish / Animals -->
-                <div class="obs-tile">
-                    <div class="obs-tile-top">
-                        <span class="obs-tile-label">Wildlife Impact</span>
-                    </div>
-                    <div>
-                        <div class="obs-tile-val">
-                            {% if report.dead_fish == 'Yes' %}
-                                <span style="color: #dc2626; font-weight: 800;">Dead Animals Seen</span>
-                            {% else %}
-                                <span style="color: #059669; font-weight: 600;">No Mortality</span>
-                            {% endif %}
-                        </div>
-                    </div>
-                </div>
-            </div>
-
-            <!-- Citizen Field Notes (if provided) -->
-            {% if report.additional_observation %}
-                <div class="citizen-notes-box">
-                    <div class="notes-header">
-                        Citizen Observer Field Note
-                    </div>
-                    <p class="notes-content">
-                        &ldquo;{{ report.additional_observation }}&rdquo;
-                    </p>
-                </div>
-            {% endif %}
+    <!-- RIGHT: PHYSICAL WATER OBSERVATIONS (EQUAL SIZE) -->
+    <div class="obs-section-card">
+        <div class="section-head-strip">
+            <h2 class="section-head-title">Physical Water Observations</h2>
+            <span style="font-size: 0.8rem; color: var(--text-muted); font-weight: 600;">
+                6 Verified Sensory Metrics
+            </span>
         </div>
 
-        <!-- Hydria Insights Diagnostic Card -->
-        <div class="diagnostic-card">
-            <div class="diagnostic-header">
-                <div class="diagnostic-title-box">
-                    <div>
-                        <h3 class="diagnostic-title">Hydria Environmental Insights</h3>
-                        <div style="font-size: 0.78rem; color: var(--text-muted);">Local Rule-Based Freshwater Health Assessment</div>
-                    </div>
+        <div class="obs-tiles-grid">
+            <!-- Tile 1: Water Colour -->
+            <div class="obs-tile">
+                <div class="obs-tile-top">
+                    <span class="obs-tile-label">Water Colour</span>
                 </div>
-
-                <span class="badge {{ insight.badge_class }}" style="font-size: 0.82rem; padding: 0.35rem 0.85rem;">
-                    {{ insight.concern_level }}
-                </span>
-            </div>
-
-            <!-- Severity Meter Bar -->
-            <div class="severity-meter-strip">
-                <span class="severity-label-small">Estimated Stress Level:</span>
-                <div class="severity-track">
-                    <div class="severity-seg active-low"></div>
-                    <div class="severity-seg {% if insight.concern_score >= 3 %}active-med{% endif %}"></div>
-                    <div class="severity-seg {% if insight.concern_score >= 6 %}active-high{% endif %}"></div>
-                </div>
-                <span style="font-size: 0.85rem; font-weight: 700; color: var(--text-primary);">
-                    Score {{ insight.concern_score }}
-                </span>
-            </div>
-
-            <!-- Executive Diagnostic Summary -->
-            <p class="diagnostic-summary">
-                {{ insight.summary }}
-            </p>
-
-            <!-- Key Stressors Identified -->
-            {% if insight.flagged_items %}
-                <div style="font-size: 0.78rem; font-weight: 700; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.05em; margin-bottom: 0.5rem;">
-                    Key Environmental Stressors Flagged:
-                </div>
-                <div class="stressor-checklist">
-                    {% for item in insight.flagged_items %}
-                        <div class="stressor-item">
-                            <span style="color: var(--primary); font-weight: 700;">•</span>
-                            <span>{{ item }}</span>
-                        </div>
-                    {% endfor %}
-                </div>
-            {% endif %}
-
-            <!-- Recommended Next Action -->
-            <div class="recommendation-box">
-                <div class="rec-title">Recommended Community Action</div>
-                <p class="rec-body">{{ insight.recommendation }}</p>
-            </div>
-
-            <!-- Scientific Transparency Disclaimer -->
-            <div class="diagnostic-disclaimer">
-                {{ insight.disclaimer }}
-            </div>
-        </div>
-
-        <!-- Community Confirmation & Voting Card -->
-        <div class="confirmation-card">
-            <div class="confirmation-count-box">
                 <div>
-                    <div class="confirmation-count-num">
-                        <span class="vote-count">{{ report.vote_count }}</span> Community Confirmations
-                    </div>
-                    <div class="confirmation-count-text">
-                        Community observers have verified and confirmed this water condition.
+                    <div class="obs-tile-val">
+                        {% if report.water_colour == 'Green' %}
+                            <span class="obs-color-dot" style="background-color: #16a34a;"></span>
+                        {% elif report.water_colour == 'Dark Green' %}
+                            <span class="obs-color-dot" style="background-color: #14532d;"></span>
+                        {% elif report.water_colour == 'Brown' %}
+                            <span class="obs-color-dot" style="background-color: #78350f;"></span>
+                        {% elif report.water_colour == 'Black' %}
+                            <span class="obs-color-dot" style="background-color: #1e293b;"></span>
+                        {% elif report.water_colour == 'Yellowish' %}
+                            <span class="obs-color-dot" style="background-color: #ca8a04;"></span>
+                        {% elif report.water_colour == 'Clear' %}
+                            <span class="obs-color-dot" style="background-color: #38bdf8;"></span>
+                        {% else %}
+                            <span class="obs-color-dot" style="background-color: #64748b;"></span>
+                        {% endif %}
+                        <span>{{ report.water_colour }}</span>
                     </div>
                 </div>
             </div>
 
-            <div>
-                {% if current_user %}
-                    <form action="{{ url_for('vote', report_id=report.id) }}" method="POST" class="vote-form-ajax">
-                        <button type="submit" class="btn btn-vote {% if user_voted %}voted{% endif %}" id="vote-btn">
-                            {% if user_voted %}
-                                Confirmed by You
-                            {% else %}
-                                I Observed This Too
-                            {% endif %}
-                        </button>
-                    </form>
-                {% else %}
-                    <a href="{{ url_for('login', next=request.path) }}" class="btn btn-vote">
-                        Log in to confirm observation
-                    </a>
-                {% endif %}
+            <!-- Tile 2: Smell / Odor -->
+            <div class="obs-tile">
+                <div class="obs-tile-top">
+                    <span class="obs-tile-label">Odor / Smell</span>
+                </div>
+                <div>
+                    <div class="obs-tile-val" style="font-size: 0.95rem;">
+                        {{ report.smell }}
+                    </div>
+                </div>
             </div>
+
+            <!-- Tile 3: Visible Algae -->
+            <div class="obs-tile">
+                <div class="obs-tile-top">
+                    <span class="obs-tile-label">Visible Algae</span>
+                </div>
+                <div>
+                    <div class="obs-tile-val">
+                        {% if report.algae == 'Yes' %}
+                            <span style="color: #059669; font-weight: 700;">Yes</span>
+                        {% elif report.algae == 'No' %}
+                            <span style="color: var(--text-muted);">No</span>
+                        {% else %}
+                            <span style="color: #d97706;">Unsure</span>
+                        {% endif %}
+                    </div>
+                </div>
+            </div>
+
+            <!-- Tile 4: Visible Waste -->
+            <div class="obs-tile">
+                <div class="obs-tile-top">
+                    <span class="obs-tile-label">Surface Waste</span>
+                </div>
+                <div>
+                    <div class="obs-tile-val">{{ report.visible_waste }}</div>
+                    <div class="obs-waste-indicator">
+                        <span class="waste-bar {% if report.visible_waste in ['Low', 'Medium', 'High'] %}active-low{% endif %}"></span>
+                        <span class="waste-bar {% if report.visible_waste in ['Medium', 'High'] %}active-med{% endif %}"></span>
+                        <span class="waste-bar {% if report.visible_waste == 'High' %}active-high{% endif %}"></span>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Tile 5: Overall Appearance -->
+            <div class="obs-tile">
+                <div class="obs-tile-top">
+                    <span class="obs-tile-label">Appearance</span>
+                </div>
+                <div>
+                    <div class="obs-tile-val">{{ report.water_appearance }}</div>
+                </div>
+            </div>
+
+            <!-- Tile 6: Dead Fish / Animals -->
+            <div class="obs-tile">
+                <div class="obs-tile-top">
+                    <span class="obs-tile-label">Wildlife Impact</span>
+                </div>
+                <div>
+                    <div class="obs-tile-val">
+                        {% if report.dead_fish == 'Yes' %}
+                            <span style="color: #dc2626; font-weight: 800;">Dead Animals Seen</span>
+                        {% else %}
+                            <span style="color: #059669; font-weight: 600;">No Mortality</span>
+                        {% endif %}
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Citizen Field Notes (if provided) -->
+        {% if report.additional_observation %}
+            <div class="citizen-notes-box" style="margin-top: 1rem;">
+                <div class="notes-header">
+                    Citizen Observer Field Note
+                </div>
+                <p class="notes-content">
+                    &ldquo;{{ report.additional_observation }}&rdquo;
+                </p>
+            </div>
+        {% endif %}
+    </div>
+</div>
+
+<!-- Middle Section: Verified Geolocation in List Format -->
+<div class="location-list-card">
+    <div class="location-list-header">
+        <div class="location-list-title">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="var(--primary)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"/>
+                <circle cx="12" cy="10" r="3"/>
+            </svg>
+            <span>Verified Geolocation</span>
+        </div>
+        <span style="font-size: 0.78rem; color: #059669; font-weight: 700; background: #ecfdf5; border: 1px solid #a7f3d0; padding: 0.25rem 0.65rem; border-radius: var(--radius-full); display: inline-flex; align-items: center; gap: 0.35rem;">
+            <span>✓</span> GPS Hardware Confirmed
+        </span>
+    </div>
+
+    <ul class="geo-list-group">
+        <li class="geo-list-item">
+            <div class="geo-item-left">
+                <span class="geo-item-icon">📍</span>
+                <div>
+                    <div class="geo-item-label">Water Body Name &amp; Classification</div>
+                    <div class="geo-item-value">{{ report.water_body_name or "Unnamed " ~ report.water_body_type }} ({{ report.water_body_type }})</div>
+                </div>
+            </div>
+            <span class="badge" style="background: var(--bg-card-subtle); border: 1px solid var(--border-color); color: var(--text-secondary); font-size: 0.8rem;">
+                {{ report.water_body_type }}
+            </span>
+        </li>
+
+        <li class="geo-list-item">
+            <div class="geo-item-left">
+                <span class="geo-item-icon">🌐</span>
+                <div>
+                    <div class="geo-item-label">Geographic Coordinates (WGS 84)</div>
+                    <div class="geo-item-value">
+                        Latitude: <strong style="font-family: monospace;">{{ report.latitude }}° N</strong> &bull; Longitude: <strong style="font-family: monospace;">{{ report.longitude }}° E</strong>
+                    </div>
+                </div>
+            </div>
+            <span style="font-size: 0.8rem; color: var(--text-muted); font-family: monospace;">
+                [{{ report.latitude }}, {{ report.longitude }}]
+            </span>
+        </li>
+
+        <li class="geo-list-item">
+            <div class="geo-item-left">
+                <span class="geo-item-icon">🛰️</span>
+                <div>
+                    <div class="geo-item-label">Sensor Precision &amp; Verification Protocol</div>
+                    <div class="geo-item-value">Browser High-Accuracy Geolocation API &bull; Tamper-checked against local cellular/satellite fix</div>
+                </div>
+            </div>
+            <span style="font-size: 0.78rem; color: #059669; font-weight: 600;">Verified Device Telemetry</span>
+        </li>
+
+        <li class="geo-list-item">
+            <div class="geo-item-left">
+                <span class="geo-item-icon">🗺️</span>
+                <div>
+                    <div class="geo-item-label">Interactive Cartography &amp; Satellite Inspection</div>
+                    <div class="geo-item-value">Direct OpenStreetMap satellite and topology coordinates reference</div>
+                </div>
+            </div>
+            <div>
+                <a href="https://www.openstreetmap.org/?mlat={{ report.latitude }}&mlon={{ report.longitude }}#map=16/{{ report.latitude }}/{{ report.longitude }}" 
+                   target="_blank" rel="noopener noreferrer" class="btn btn-secondary btn-sm" style="display: inline-flex; align-items: center; gap: 0.35rem; font-size: 0.82rem;">
+                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                        <polygon points="1 6 1 22 8 18 16 22 23 18 23 2 16 6 8 2 1 6"/>
+                        <line x1="8" y1="2" x2="8" y2="18"/>
+                        <line x1="16" y1="6" x2="16" y2="22"/>
+                    </svg>
+                    Inspect on OpenStreetMap ↗
+                </a>
+            </div>
+        </li>
+
+        <li class="geo-list-item">
+            <div class="geo-item-left">
+                <span class="geo-item-icon">🕒</span>
+                <div>
+                    <div class="geo-item-label">Observation Timestamp &amp; Logging Date</div>
+                    <div class="geo-item-value">{{ report.created_at }}</div>
+                </div>
+            </div>
+            <span style="font-size: 0.8rem; color: var(--text-muted);">
+                Submitter ID: #{{ report.user_id }}
+            </span>
+        </li>
+    </ul>
+</div>
+
+<!-- Bottom Section: Hydria Environmental Insights in Full Space Card -->
+<div class="diagnostic-card-full">
+    <div class="diagnostic-header">
+        <div class="diagnostic-title-box">
+            <div>
+                <h3 class="diagnostic-title" style="font-size: 1.35rem; font-weight: 800; color: var(--text-primary); margin-bottom: 0.2rem;">
+                    Hydria Environmental Insights
+                </h3>
+                <div style="font-size: 0.85rem; color: var(--text-muted);">
+                    Comprehensive Rule-Based Freshwater Health Assessment &amp; Diagnostic Protocol
+                </div>
+            </div>
+        </div>
+
+        <span class="badge {{ insight.badge_class }}" style="font-size: 0.88rem; padding: 0.4rem 1rem;">
+            {{ insight.concern_level }}
+        </span>
+    </div>
+
+    <!-- Severity Meter Bar -->
+    <div class="severity-meter-strip" style="margin: 1.25rem 0; background: var(--bg-card-subtle); padding: 0.85rem 1.25rem; border-radius: var(--radius-md); border: 1px solid var(--border-color);">
+        <span class="severity-label-small" style="font-size: 0.85rem; font-weight: 700;">Estimated Stress Level:</span>
+        <div class="severity-track" style="flex: 1; max-width: 450px;">
+            <div class="severity-seg active-low"></div>
+            <div class="severity-seg {% if insight.concern_score >= 3 %}active-med{% endif %}"></div>
+            <div class="severity-seg {% if insight.concern_score >= 6 %}active-high{% endif %}"></div>
+        </div>
+        <span style="font-size: 0.95rem; font-weight: 800; color: var(--text-primary);">
+            Risk Score: {{ insight.concern_score }} / 10
+        </span>
+    </div>
+
+    <!-- Executive Diagnostic Summary Box -->
+    <div style="background: var(--bg-card-subtle); border-left: 4px solid var(--primary); padding: 1.25rem 1.5rem; border-radius: 0 var(--radius-md) var(--radius-md) 0; margin-bottom: 1.5rem;">
+        <div style="font-size: 0.78rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.05em; color: var(--primary); margin-bottom: 0.4rem;">
+            Executive Environmental Summary
+        </div>
+        <p style="font-size: 1rem; line-height: 1.65; color: var(--text-primary); margin: 0;">
+            {{ insight.summary }}
+        </p>
+    </div>
+
+    <!-- Key Stressors Identified Grid -->
+    {% if insight.flagged_items %}
+        <div style="margin-bottom: 1.5rem;">
+            <div style="font-size: 0.78rem; font-weight: 700; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.05em; margin-bottom: 0.65rem;">
+                Key Environmental Stressors Flagged:
+            </div>
+            <div style="display: grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); gap: 0.75rem;">
+                {% for item in insight.flagged_items %}
+                    <div style="background: #ffffff; border: 1px solid var(--border-color); padding: 0.75rem 1rem; border-radius: var(--radius-md); display: flex; align-items: center; gap: 0.65rem; box-shadow: var(--shadow-sm);">
+                        <span style="color: var(--primary); font-weight: 800; font-size: 1.1rem;">•</span>
+                        <span style="font-size: 0.88rem; font-weight: 600; color: var(--text-primary);">{{ item }}</span>
+                    </div>
+                {% endfor %}
+            </div>
+        </div>
+    {% endif %}
+
+    <!-- Recommendation & Scientific Transparency Grid -->
+    <div style="display: grid; grid-template-columns: 3fr 2fr; gap: 1.25rem; margin-bottom: 1.75rem;">
+        <!-- Recommended Community Action -->
+        <div class="recommendation-box" style="margin: 0; display: flex; flex-direction: column; justify-content: center;">
+            <div class="rec-title">Recommended Community Action</div>
+            <p class="rec-body" style="font-size: 0.95rem; margin: 0;">{{ insight.recommendation }}</p>
+        </div>
+
+        <!-- Scientific Transparency Disclaimer -->
+        <div class="diagnostic-disclaimer" style="margin: 0; display: flex; flex-direction: column; justify-content: center;">
+            <div style="font-weight: 700; margin-bottom: 0.25rem; color: var(--text-secondary);">Scientific Methodology:</div>
+            <div>{{ insight.disclaimer }}</div>
+        </div>
+    </div>
+
+    <!-- Community Confirmation Bar Inside the Full Card -->
+    <div style="display: flex; align-items: center; justify-content: space-between; padding-top: 1.25rem; border-top: 1px solid var(--border-color); flex-wrap: wrap; gap: 1rem;">
+        <div style="display: flex; align-items: center; gap: 0.75rem;">
+            <span style="font-size: 1.5rem;">💧</span>
+            <div>
+                <div style="font-size: 1rem; font-weight: 700; color: var(--text-primary);">
+                    <span class="vote-count">{{ report.vote_count }}</span> Community Confirmations
+                </div>
+                <div style="font-size: 0.82rem; color: var(--text-muted);">
+                    Community observers have independently reviewed and corroborated this water condition.
+                </div>
+            </div>
+        </div>
+
+        <div>
+            {% if current_user %}
+                <form action="{{ url_for('vote', report_id=report.id) }}" method="POST" class="vote-form-ajax">
+                    <button type="submit" class="btn btn-vote {% if user_voted %}voted{% endif %}" id="vote-btn">
+                        {% if user_voted %}
+                            Confirmed by You
+                        {% else %}
+                            I Observed This Too
+                        {% endif %}
+                    </button>
+                </form>
+            {% else %}
+                <a href="{{ url_for('login', next=request.path) }}" class="btn btn-vote">
+                    Log in to confirm observation
+                </a>
+            {% endif %}
         </div>
     </div>
 </div>
