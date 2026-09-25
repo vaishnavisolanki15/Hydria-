@@ -312,23 +312,7 @@ def seed_database():
             "status": "In Process",
             "votes": 5
         },
-        {
-            "user_idx": 1,
-            "name": "Pipliyapala Regional Park Lake",
-            "type": "Lake",
-            "lat": 22.6815,
-            "lon": 75.8456,
-            "colour": "Green",
-            "smell": "Bad smell",
-            "algae": "No",
-            "waste": "Low",
-            "appearance": "Normal",
-            "dead_fish": "No",
-            "observation": "Surface micro-algae growth near recreational boating zone with slight odor.",
-            "color_type": "green",
-            "status": "Submitted",
-            "votes": 9
-        },
+       
 
         # --- LOW RISK (4 reports - Clean water bodies) ---
         {
@@ -412,7 +396,6 @@ def seed_database():
         "Bilawali Lake Shore": "real_bellandur_lake.jpg",
         "Mahalakshmi Pond": "photo_lily_pond.jpg",
         "North Canal Drainage": "real_bali_polluted_river.jpg",
-        "Pipliyapala Regional Park Lake": "real_dal_lake.jpg",
         "Umngot River (Dawki)": "real_dawki_river.jpg",
         "Dal Lake (Hazratbal Basin)": "real_dal_lake.jpg",
         "Lake Pichola": "real_lake_pichola.jpg",

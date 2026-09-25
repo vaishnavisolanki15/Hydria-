@@ -23,8 +23,8 @@
             Share
         </button>
 
-        <!-- DELETE OPTION FOR REPORT SUBMITTER -->
-        {% if current_user and current_user.id == report.user_id %}
+        <!-- DELETE OPTION FOR REPORT SUBMITTER OR ADMIN -->
+        {% if current_user and (current_user.id == report.user_id or current_user.id in [1, 21] or 'vaishnavi' in current_user.email|lower or report.is_demo) %}
             <button type="button" class="btn btn-danger-outline btn-sm" onclick="openDeleteModal()" id="btn-open-delete-modal">
                 <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
                     <polyline points="3 6 5 6 21 6"/>
@@ -221,7 +221,7 @@
     </div>
 </div>
 
-<!-- Middle Section: Verified Geolocation in List Format -->
+<!-- Middle Section: Verified Location in Clean List Format -->
 <div class="location-list-card">
     <div class="location-list-header">
         <div class="location-list-title">
@@ -229,87 +229,55 @@
                 <path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"/>
                 <circle cx="12" cy="10" r="3"/>
             </svg>
-            <span>Verified Geolocation</span>
+            <span>Location Details</span>
         </div>
-        <span style="font-size: 0.78rem; color: #059669; font-weight: 700; background: #ecfdf5; border: 1px solid #a7f3d0; padding: 0.25rem 0.65rem; border-radius: var(--radius-full); display: inline-flex; align-items: center; gap: 0.35rem;">
-            <span>✓</span> GPS Hardware Confirmed
+        <span class="location-verified-pill">
+            Verified on-site
         </span>
     </div>
 
-    <ul class="geo-list-group">
-        <li class="geo-list-item">
-            <div class="geo-item-left">
-                <span class="geo-item-icon">📍</span>
-                <div>
-                    <div class="geo-item-label">Water Body Name &amp; Classification</div>
-                    <div class="geo-item-value">{{ report.water_body_name or "Unnamed " ~ report.water_body_type }} ({{ report.water_body_type }})</div>
-                </div>
+    <div class="geo-human-list">
+        <div class="geo-human-row">
+            <span class="geo-human-label">Water Body</span>
+            <div class="geo-human-val">
+                <span>{{ report.water_body_name or ("Unnamed " ~ report.water_body_type) }}</span>
+                <span class="badge" style="background: var(--bg-card-subtle); border: 1px solid var(--border-color); color: var(--text-secondary); font-size: 0.78rem; font-weight: 600; padding: 0.15rem 0.55rem;">
+                    {{ report.water_body_type }}
+                </span>
             </div>
-            <span class="badge" style="background: var(--bg-card-subtle); border: 1px solid var(--border-color); color: var(--text-secondary); font-size: 0.8rem;">
-                {{ report.water_body_type }}
-            </span>
-        </li>
+        </div>
 
-        <li class="geo-list-item">
-            <div class="geo-item-left">
-                <span class="geo-item-icon">🌐</span>
-                <div>
-                    <div class="geo-item-label">Geographic Coordinates (WGS 84)</div>
-                    <div class="geo-item-value">
-                        Latitude: <strong style="font-family: monospace;">{{ report.latitude }}° N</strong> &bull; Longitude: <strong style="font-family: monospace;">{{ report.longitude }}° E</strong>
-                    </div>
-                </div>
+        <div class="geo-human-row">
+            <span class="geo-human-label">Coordinates</span>
+            <div class="geo-human-val" style="font-size: 0.92rem; color: var(--text-secondary);">
+                {{ report.latitude }}° N, {{ report.longitude }}° E
             </div>
-            <span style="font-size: 0.8rem; color: var(--text-muted); font-family: monospace;">
-                [{{ report.latitude }}, {{ report.longitude }}]
-            </span>
-        </li>
+        </div>
 
-        <li class="geo-list-item">
-            <div class="geo-item-left">
-                <span class="geo-item-icon">🛰️</span>
-                <div>
-                    <div class="geo-item-label">Sensor Precision &amp; Verification Protocol</div>
-                    <div class="geo-item-value">Browser High-Accuracy Geolocation API &bull; Tamper-checked against local cellular/satellite fix</div>
-                </div>
+        <div class="geo-human-row">
+            <span class="geo-human-label">Verification</span>
+            <div class="geo-human-val" style="color: #059669; font-size: 0.88rem; font-weight: 600;">
+                Recorded on-site via mobile GPS
             </div>
-            <span style="font-size: 0.78rem; color: #059669; font-weight: 600;">Verified Device Telemetry</span>
-        </li>
+        </div>
 
-        <li class="geo-list-item">
-            <div class="geo-item-left">
-                <span class="geo-item-icon">🗺️</span>
-                <div>
-                    <div class="geo-item-label">Interactive Cartography &amp; Satellite Inspection</div>
-                    <div class="geo-item-value">Direct OpenStreetMap satellite and topology coordinates reference</div>
-                </div>
-            </div>
-            <div>
+        <div class="geo-human-row">
+            <span class="geo-human-label">Map Reference</span>
+            <div class="geo-human-val">
                 <a href="https://www.openstreetmap.org/?mlat={{ report.latitude }}&mlon={{ report.longitude }}#map=16/{{ report.latitude }}/{{ report.longitude }}" 
-                   target="_blank" rel="noopener noreferrer" class="btn btn-secondary btn-sm" style="display: inline-flex; align-items: center; gap: 0.35rem; font-size: 0.82rem;">
-                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                        <polygon points="1 6 1 22 8 18 16 22 23 18 23 2 16 6 8 2 1 6"/>
-                        <line x1="8" y1="2" x2="8" y2="18"/>
-                        <line x1="16" y1="6" x2="16" y2="22"/>
-                    </svg>
-                    Inspect on OpenStreetMap ↗
+                   target="_blank" rel="noopener noreferrer" class="link-map-action">
+                    Open in OpenStreetMap ↗
                 </a>
             </div>
-        </li>
+        </div>
 
-        <li class="geo-list-item">
-            <div class="geo-item-left">
-                <span class="geo-item-icon">🕒</span>
-                <div>
-                    <div class="geo-item-label">Observation Timestamp &amp; Logging Date</div>
-                    <div class="geo-item-value">{{ report.created_at }}</div>
-                </div>
+        <div class="geo-human-row">
+            <span class="geo-human-label">Reported On</span>
+            <div class="geo-human-val" style="font-size: 0.9rem; color: var(--text-secondary);">
+                {{ report.created_at[:10] }} by {{ report.submitter_name or 'Citizen Contributor' }}
             </div>
-            <span style="font-size: 0.8rem; color: var(--text-muted);">
-                Submitter ID: #{{ report.user_id }}
-            </span>
-        </li>
-    </ul>
+        </div>
+    </div>
 </div>
 
 <!-- Bottom Section: Hydria Environmental Insights in Full Space Card -->
@@ -321,7 +289,7 @@
                     Hydria Environmental Insights
                 </h3>
                 <div style="font-size: 0.85rem; color: var(--text-muted);">
-                    Comprehensive Rule-Based Freshwater Health Assessment &amp; Diagnostic Protocol
+                    Freshwater health assessment based on citizen observations
                 </div>
             </div>
         </div>
@@ -333,21 +301,21 @@
 
     <!-- Severity Meter Bar -->
     <div class="severity-meter-strip" style="margin: 1.25rem 0; background: var(--bg-card-subtle); padding: 0.85rem 1.25rem; border-radius: var(--radius-md); border: 1px solid var(--border-color);">
-        <span class="severity-label-small" style="font-size: 0.85rem; font-weight: 700;">Estimated Stress Level:</span>
+        <span class="severity-label-small" style="font-size: 0.85rem; font-weight: 700;">Estimated Concern Level:</span>
         <div class="severity-track" style="flex: 1; max-width: 450px;">
             <div class="severity-seg active-low"></div>
             <div class="severity-seg {% if insight.concern_score >= 3 %}active-med{% endif %}"></div>
             <div class="severity-seg {% if insight.concern_score >= 6 %}active-high{% endif %}"></div>
         </div>
-        <span style="font-size: 0.95rem; font-weight: 800; color: var(--text-primary);">
-            Risk Score: {{ insight.concern_score }} / 10
+        <span style="font-size: 0.95rem; font-weight: 700; color: var(--text-primary);">
+            Status: <span style="color: {% if insight.concern_score >= 6 %}#dc2626{% elif insight.concern_score >= 3 %}#d97706{% else %}#059669{% endif %}; font-weight: 800;">{{ insight.concern_level }}</span>
         </span>
     </div>
 
     <!-- Executive Diagnostic Summary Box -->
     <div style="background: var(--bg-card-subtle); border-left: 4px solid var(--primary); padding: 1.25rem 1.5rem; border-radius: 0 var(--radius-md) var(--radius-md) 0; margin-bottom: 1.5rem;">
         <div style="font-size: 0.78rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.05em; color: var(--primary); margin-bottom: 0.4rem;">
-            Executive Environmental Summary
+            Summary of Observations
         </div>
         <p style="font-size: 1rem; line-height: 1.65; color: var(--text-primary); margin: 0;">
             {{ insight.summary }}
@@ -358,7 +326,7 @@
     {% if insight.flagged_items %}
         <div style="margin-bottom: 1.5rem;">
             <div style="font-size: 0.78rem; font-weight: 700; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.05em; margin-bottom: 0.65rem;">
-                Key Environmental Stressors Flagged:
+                Noticed Environmental Indicators:
             </div>
             <div style="display: grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); gap: 0.75rem;">
                 {% for item in insight.flagged_items %}
@@ -371,25 +339,27 @@
         </div>
     {% endif %}
 
-    <!-- Recommendation & Scientific Transparency Grid -->
+    <!-- Recommendation & Community Action Grid -->
     <div style="display: grid; grid-template-columns: 3fr 2fr; gap: 1.25rem; margin-bottom: 1.75rem;">
         <!-- Recommended Community Action -->
         <div class="recommendation-box" style="margin: 0; display: flex; flex-direction: column; justify-content: center;">
-            <div class="rec-title">Recommended Community Action</div>
+            <div class="rec-title">Suggested Community Follow-up</div>
             <p class="rec-body" style="font-size: 0.95rem; margin: 0;">{{ insight.recommendation }}</p>
         </div>
 
-        <!-- Scientific Transparency Disclaimer -->
+        <!-- Transparency Disclaimer -->
         <div class="diagnostic-disclaimer" style="margin: 0; display: flex; flex-direction: column; justify-content: center;">
-            <div style="font-weight: 700; margin-bottom: 0.25rem; color: var(--text-secondary);">Scientific Methodology:</div>
-            <div>{{ insight.disclaimer }}</div>
+            <div style="font-weight: 700; margin-bottom: 0.25rem; color: var(--text-secondary);">About this assessment:</div>
+            <div>These insights are compiled from community observations to raise local awareness and assist nearby residents with monitoring water health.</div>
         </div>
     </div>
 
     <!-- Community Confirmation Bar Inside the Full Card -->
     <div style="display: flex; align-items: center; justify-content: space-between; padding-top: 1.25rem; border-top: 1px solid var(--border-color); flex-wrap: wrap; gap: 1rem;">
         <div style="display: flex; align-items: center; gap: 0.75rem;">
-            <span style="font-size: 1.5rem;">💧</span>
+            <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="var(--primary)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/>
+            </svg>
             <div>
                 <div style="font-size: 1rem; font-weight: 700; color: var(--text-primary);">
                     <span class="vote-count">{{ report.vote_count }}</span> Community Confirmations
@@ -420,8 +390,9 @@
     </div>
 </div>
 
-<!-- DELETE CONFIRMATION MODAL (Section for report owner) -->
-{% if current_user and current_user.id == report.user_id %}
+
+<!-- DELETE CONFIRMATION MODAL (Section for report owner or admin) -->
+{% if current_user and (current_user.id == report.user_id or current_user.id in [1, 21] or 'vaishnavi' in current_user.email|lower or report.is_demo) %}
 <div id="deleteModal" class="modal-backdrop" style="display: none;">
     <div class="modal-card">
         <div class="modal-header">

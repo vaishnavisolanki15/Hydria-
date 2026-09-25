@@ -531,20 +531,31 @@ def vote(report_id):
 @login_required
 def delete_report_route(report_id):
     user_id = session['user_id']
+    user = database.get_user_by_id(user_id)
     report = database.get_report_by_id(report_id)
     if not report:
         flash("Report not found.", "error")
-        return redirect(url_for('dashboard'))
+        return redirect(url_for('community'))
 
-    # Authorization check: only the submitter can delete their report
-    if report['user_id'] != user_id:
+    # Authorization check:
+    # 1. The original submitter can delete their report
+    # 2. Platform administrators (Vaishnavi, user ID 1 or 21) can delete any report
+    # 3. Any logged-in member can delete sample/demo reports
+    is_owner = (report['user_id'] == user_id)
+    is_admin = (user_id in [1, 21]) or (user and 'vaishnavi' in user['email'].lower())
+    is_demo = bool(report['is_demo']) if 'is_demo' in report.keys() else False
+
+    if not (is_owner or is_admin or is_demo):
         flash("You are not authorized to delete this report.", "error")
         return redirect(url_for('report_detail', report_id=report_id))
 
-    success = database.delete_report(report_id, user_id=user_id)
+    success = database.delete_report(report_id, user_id=None if (is_admin or is_demo) else user_id)
     if success:
-        flash("Report has been deleted successfully.", "success")
-        return redirect(url_for('dashboard'))
+        flash(f"Report has been deleted successfully.", "success")
+        referer = request.referrer
+        if referer and ('/community' in referer or '/analysis-board' in referer):
+            return redirect(referer)
+        return redirect(url_for('community'))
     else:
         flash("Could not delete report. Please try again.", "error")
         return redirect(url_for('report_detail', report_id=report_id))

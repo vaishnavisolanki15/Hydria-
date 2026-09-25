@@ -172,6 +172,15 @@ class HydriaMVPTestSuite(unittest.TestCase):
         self.assertIn(b"Duplicate photo detected", resp_dup.data)
         self.assertIn(b"Possible duplicate image detected", resp_dup.data)
 
+        # Clean up test report from database so it doesn't pollute live community view
+        conn = database.get_db_connection()
+        cursor = conn.cursor()
+        cursor.execute("SELECT id FROM reports WHERE water_body_name = ?", (unique_name,))
+        test_rep = cursor.fetchone()
+        if test_rep:
+            database.delete_report(test_rep['id'])
+        conn.close()
+
     def test_13_and_14_voting_system(self):
         """Test 13 & 14: Voting and duplicate vote prevention."""
         # Get a submitted report
@@ -190,7 +199,7 @@ class HydriaMVPTestSuite(unittest.TestCase):
         # Check report detail page
         resp_detail = self.client.get(f'/report/{rep_id}')
         self.assertEqual(resp_detail.status_code, 200)
-        self.assertIn(b"Hydria Insights", resp_detail.data)
+        self.assertIn(b"Hydria Environmental Insights", resp_detail.data)
 
         # Vote
         resp_vote = self.client.post(f'/vote/{rep_id}', headers={'X-Requested-With': 'XMLHttpRequest'})

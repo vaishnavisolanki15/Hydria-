@@ -599,64 +599,80 @@ a:hover {
     gap: 0.5rem;
 }
 
-.geo-list-group {
-    list-style: none;
-    padding: 0;
-    margin: 0;
-    display: flex;
-    flex-direction: column;
-    gap: 0.75rem;
+.location-verified-pill {
+    font-size: 0.78rem;
+    color: #059669;
+    font-weight: 700;
+    background: #ecfdf5;
+    border: 1px solid #a7f3d0;
+    padding: 0.25rem 0.65rem;
+    border-radius: var(--radius-full);
 }
 
-.geo-list-item {
+.geo-human-list {
+    display: flex;
+    flex-direction: column;
+    border: 1px solid var(--border-color);
+    border-radius: var(--radius-md);
+    overflow: hidden;
+}
+
+.geo-human-row {
     display: flex;
     align-items: center;
     justify-content: space-between;
     padding: 0.85rem 1.25rem;
-    background: var(--bg-card-subtle);
-    border: 1px solid var(--border-color);
-    border-radius: var(--radius-md);
-    transition: background 0.15s ease, border-color 0.15s ease;
-    flex-wrap: wrap;
-    gap: 0.5rem;
-}
-
-.geo-list-item:hover {
-    background: #f8fafc;
-    border-color: #cbd5e1;
-}
-
-.geo-item-left {
-    display: flex;
-    align-items: center;
-    gap: 0.85rem;
-}
-
-.geo-item-icon {
-    font-size: 1.25rem;
-    width: 36px;
-    height: 36px;
-    display: flex;
-    align-items: center;
-    justify-content: center;
     background: #ffffff;
-    border-radius: var(--radius-sm);
-    border: 1px solid var(--border-color);
-    flex-shrink: 0;
+    border-bottom: 1px solid var(--border-color);
+    transition: background 0.15s ease;
+    gap: 1rem;
+    flex-wrap: wrap;
 }
 
-.geo-item-label {
-    font-size: 0.76rem;
-    font-weight: 700;
-    text-transform: uppercase;
-    letter-spacing: 0.05em;
+.geo-human-row:last-child {
+    border-bottom: none;
+}
+
+.geo-human-row:hover {
+    background: #f8fafc;
+}
+
+.geo-human-label {
+    font-size: 0.85rem;
+    font-weight: 600;
     color: var(--text-muted);
+    min-width: 130px;
 }
 
-.geo-item-value {
+.geo-human-val {
     font-size: 0.95rem;
     font-weight: 600;
     color: var(--text-primary);
+    text-align: right;
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+}
+
+.link-map-action {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.35rem;
+    font-size: 0.85rem;
+    font-weight: 600;
+    color: var(--primary);
+    text-decoration: none;
+    padding: 0.35rem 0.8rem;
+    border-radius: var(--radius-sm);
+    background: var(--bg-card-subtle);
+    border: 1px solid var(--border-color);
+    transition: all 0.2s ease;
+}
+
+.link-map-action:hover {
+    background: #eff6ff;
+    border-color: #bfdbfe;
+    color: var(--primary-hover);
 }
 
 /* Hydria Environmental Insights Full Card */
@@ -1707,6 +1723,125 @@ a:hover {
 }
 
 
+
+/* -------------------------------------------------------------
+   Report Wizard & Step Progress Stepper
+   ------------------------------------------------------------- */
+.report-wizard {
+    max-width: 860px;
+    margin: 0 auto 3rem;
+}
+
+.step-indicator {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.75rem;
+    margin-bottom: 2rem;
+    flex-wrap: wrap;
+}
+
+.step-pill {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.55rem;
+    padding: 0.5rem 1.15rem;
+    border-radius: var(--radius-full);
+    background: #f1f5f9;
+    color: var(--text-muted);
+    font-size: 0.85rem;
+    font-weight: 600;
+    border: 1px solid var(--border-color);
+    transition: all 0.2s ease;
+}
+
+.step-pill span {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 22px;
+    height: 22px;
+    border-radius: 50%;
+    background: #cbd5e1;
+    color: #475569;
+    font-size: 0.75rem;
+    font-weight: 700;
+}
+
+.step-pill.active {
+    background: #eff6ff;
+    color: var(--primary);
+    border-color: #bfdbfe;
+    box-shadow: 0 2px 8px rgba(2, 132, 199, 0.1);
+}
+
+.step-pill.active span {
+    background: var(--primary);
+    color: #ffffff;
+}
+
+.step-pill.completed {
+    background: #ecfdf5;
+    color: #059669;
+    border-color: #a7f3d0;
+}
+
+.step-pill.completed span {
+    background: #059669;
+    color: #ffffff;
+}
+
+/* Location Status & Fallback Box */
+.location-box {
+    background: #ffffff;
+    border: 1px solid var(--border-color);
+    border-radius: var(--radius-md);
+    padding: 1rem 1.25rem;
+    transition: all 0.2s ease;
+    box-shadow: var(--shadow-sm);
+}
+
+.location-box.location-detected {
+    background: #f0fdf4;
+    border-color: #86efac;
+    color: #166534;
+}
+
+.location-box.location-error {
+    background: #fef2f2;
+    border-color: #fca5a5;
+    color: #991b1b;
+}
+
+.location-pulse-dot {
+    width: 10px;
+    height: 10px;
+    border-radius: 50%;
+    background: var(--primary);
+    display: inline-block;
+    animation: locationPulse 1.5s infinite;
+}
+
+@keyframes locationPulse {
+    0% { transform: scale(0.95); opacity: 0.8; }
+    50% { transform: scale(1.3); opacity: 0.4; }
+    100% { transform: scale(0.95); opacity: 0.8; }
+}
+
+.manual-loc-card {
+    background: var(--bg-card-subtle);
+    border: 1px solid var(--border-color);
+    border-radius: var(--radius-md);
+    padding: 1rem 1.25rem;
+    box-shadow: var(--shadow-sm);
+}
+
+.preset-btn {
+    padding: 0.25rem 0.55rem;
+    font-size: 0.78rem;
+    font-weight: 500;
+    border-radius: var(--radius-sm);
+}
 
 /* -------------------------------------------------------------
    Forms & Controls
