@@ -13,6 +13,7 @@ from seed_demo import generate_sample_water_image
 
 class HydriaMVPTestSuite(unittest.TestCase):
     def setUp(self):
+        os.environ['TESTING'] = 'True'
         app.config['TESTING'] = True
         app.config['WTF_CSRF_ENABLED'] = False
         self.client = app.test_client()
@@ -155,7 +156,7 @@ class HydriaMVPTestSuite(unittest.TestCase):
         resp_board = self.client.get('/analysis-board')
         self.assertIn(unique_name.encode('utf-8'), resp_board.data)
 
-        # Test 15: Uploading the exact same image triggers duplicate image detection
+        # Test 15: Uploading the exact same image triggers duplicate image detection & blocking
         resp_dup = self.client.post('/validate-report', data={
             'water_body_name': 'Another Water Body',
             'water_body_type': 'Pond',
@@ -170,16 +171,18 @@ class HydriaMVPTestSuite(unittest.TestCase):
             'image': (io.BytesIO(img_bytes), 'dup_test.jpg')
         }, content_type='multipart/form-data')
         self.assertIn(b"Duplicate photo detected", resp_dup.data)
-        self.assertIn(b"Possible duplicate image detected", resp_dup.data)
+        self.assertIn(b"DUPLICATE PHOTO NOT ALLOWED", resp_dup.data)
 
-        # Clean up test report from database so it doesn't pollute live community view
+        # Clean up test report from database
         conn = database.get_db_connection()
-        cursor = conn.cursor()
-        cursor.execute("SELECT id FROM reports WHERE water_body_name = ?", (unique_name,))
-        test_rep = cursor.fetchone()
-        if test_rep:
-            database.delete_report(test_rep['id'])
-        conn.close()
+        try:
+            with conn.cursor() as cursor:
+                cursor.execute("SELECT id FROM reports WHERE water_body_name = %s", (unique_name,))
+                test_rep = cursor.fetchone()
+                if test_rep:
+                    database.delete_report(test_rep['id'])
+        finally:
+            conn.close()
 
     def test_13_and_14_voting_system(self):
         """Test 13 & 14: Voting and duplicate vote prevention."""
@@ -210,7 +213,7 @@ class HydriaMVPTestSuite(unittest.TestCase):
         # Toggle or re-vote should not duplicate database entries (unique constraint enforced)
         # Verify in database
         has_voted = database.has_user_voted(2, rep_id)
-        # Should be a valid boolean state without SQLite errors
+        # Should be a valid boolean state without database errors
         self.assertIn(has_voted, [True, False])
 
     def test_18_delete_report(self):
@@ -260,5 +263,108 @@ class HydriaMVPTestSuite(unittest.TestCase):
         self.assertIn(b"You have been logged out", resp.data)
         self.assertIn(b"Login", resp.data)
 
+    def test_18_geocode_manual_address(self):
+        """Test 18: Manual address geocoding endpoint (/api/geocode)."""
+        # Test offline dictionary lookup
+        resp = self.client.get('/api/geocode?q=Indore')
+        self.assertEqual(resp.status_code, 200)
+        data = resp.get_json()
+        self.assertTrue(data['success'])
+        self.assertAlmostEqual(data['lat'], 22.7196, places=3)
+        self.assertAlmostEqual(data['lon'], 75.8577, places=3)
+        self.assertIn('Indore', data['display_name'])
+
+        # Test empty query error
+        resp_empty = self.client.get('/api/geocode?q=')
+        self.assertEqual(resp_empty.status_code, 400)
+        self.assertFalse(resp_empty.get_json()['success'])
+
+    def test_19_gemini_ai_analysis(self):
+        """Test 19: Verify Gemini AI water quality report analysis."""
+        from analysis_engine import generate_water_insight
+        sample_report = {
+            'id': 9999,
+            'water_body_name': 'Powai Lake',
+            'water_body_type': 'Lake',
+            'latitude': 19.1264,
+            'longitude': 72.9050,
+            'water_colour': 'Dark Green',
+            'smell': 'Sewage-like smell',
+            'algae': 'Yes',
+            'visible_waste': 'High',
+            'water_appearance': 'Very Dirty',
+            'dead_fish': 'Yes',
+            'additional_observation': 'Heavy algae and municipal stormwater overflow.'
+        }
+        insight = generate_water_insight(sample_report)
+        self.assertIn(insight['concern_level'], ['High Concern', 'Moderate Concern', 'Low / Baseline Concern'])
+        self.assertTrue(len(insight['summary']) > 10)
+        self.assertIn('root_causes', insight)
+        self.assertIn('civic_action_steps', insight)
+
+    def test_20_duplicate_report_strictly_blocked(self):
+        """Test 20: Verify duplicate report submissions for same location/water body are strictly blocked."""
+        import time
+        # Login first
+        self.client.post('/login', data={'email': 'vaishnavi@example.com', 'password': 'password123'})
+
+        unique_lake = f"Duplicate Guard Lake {int(time.time()*1000)}"
+        unique_lat = round(21.1000 + (time.time() % 100) / 10.0, 4)
+        unique_lon = round(74.1000 + (time.time() % 100) / 10.0, 4)
+        # 1. Create first report for today
+        rep_id = database.create_report(
+            user_id=1,
+            water_body_name=unique_lake,
+            water_body_type="Lake",
+            latitude=unique_lat,
+            longitude=unique_lon,
+            water_colour="Green",
+            smell="Bad smell",
+            algae="Yes",
+            visible_waste="Medium",
+            water_appearance="Dirty",
+            dead_fish="No",
+            additional_observation="Initial report",
+            image_path="uploads/real_bellandur_lake.jpg",
+            image_hash=f"unique_hash_guard_{int(time.time()*1000)}",
+            status="Submitted"
+        )
+
+        try:
+            # 2. Check duplicate report detection
+            dups = database.check_duplicate_report(unique_lat, unique_lon, unique_lake)
+            self.assertTrue(len(dups) > 0)
+            self.assertEqual(dups[0]['id'], rep_id)
+
+            # 3. Validation should detect duplicate report and mark ready_to_submit as False
+            resp_val = self.client.post('/validate-report', data={
+                'water_body_name': unique_lake,
+                'water_body_type': 'Lake',
+                'latitude': str(unique_lat),
+                'longitude': str(unique_lon),
+                'water_colour': 'Green',
+                'smell': 'Bad smell',
+                'algae': 'Yes',
+                'visible_waste': 'Medium',
+                'water_appearance': 'Dirty',
+                'dead_fish': 'No',
+                'image': (self.create_dummy_water_image(), 'guard_water.jpg')
+            }, content_type='multipart/form-data')
+            self.assertIn(b"DUPLICATE REPORT NOT ALLOWED", resp_val.data)
+            self.assertIn(b"Submission Blocked: Duplicate Not Allowed", resp_val.data)
+
+            # 4. Attempting to submit duplicate report directly should be blocked by backend
+            resp_sub = self.client.post('/submit-report', data={
+                'water_body_name': unique_lake,
+                'water_body_type': 'Lake',
+                'latitude': str(unique_lat),
+                'longitude': str(unique_lon),
+                'temp_filename': 'non_existent.jpg'
+            }, follow_redirects=True)
+            self.assertIn(b"Submission blocked", resp_sub.data)
+        finally:
+            database.delete_report(rep_id)
+
 if __name__ == '__main__':
     unittest.main()
+

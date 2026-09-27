@@ -1,5 +1,10 @@
 import os
 import math
+import json
+from dotenv import load_dotenv
+
+BASE_DIR = os.path.dirname(os.path.abspath(__file__))
+load_dotenv(os.path.join(BASE_DIR, '.env'))
 from PIL import Image, ImageStat
 from PIL.ExifTags import TAGS, GPSTAGS
 
@@ -85,97 +90,210 @@ def check_file_validity(file_path):
     except Exception as e:
         return False, f"Image file is corrupted or cannot be processed: {str(e)}"
 
-def check_duplicate_image(image_hash, existing_hashes, threshold=4):
+def check_duplicate_image(image_hash, existing_hashes, threshold=6):
     """
     Check 2: Compare perceptual hash with existing reports.
-    If hamming distance is <= threshold, it's considered duplicate/near-identical.
+    If hamming distance is <= threshold (or exact match), it's strictly considered a duplicate.
+    Duplicates are NOT allowed.
     """
     if not image_hash:
         return False, None
     for rep_id, ex_hash in existing_hashes:
         if not ex_hash:
             continue
+        # Exact match
+        if image_hash.strip().lower() == ex_hash.strip().lower():
+            return True, rep_id
+        # Perceptual hash match
         dist = hamming_distance(image_hash, ex_hash)
         if dist <= threshold:
             return True, rep_id
     return False, None
 
-def check_photo_suitability(image):
+def validate_with_gemini_vision(image_input):
     """
-    Check 3: Local heuristic check for obvious non-water / blank / portrait images.
+    Classify uploaded image using Google Gemini Vision (gemini-flash-latest).
+    Accurately detects whether the image is a genuine outdoor freshwater body or
+    an unwanted image (computer screenshot, code error traceback, UI capture,
+    meme, text document, indoor item, or selfie).
+    
+    Returns: (is_water_body: bool, detected_subject: str, rejection_reason: str) or None on failure/offline.
+    """
+    # Skip remote API calls during automated unit test runs
+    try:
+        from flask import has_app_context, current_app
+        if has_app_context() and current_app and current_app.config.get('TESTING'):
+            return None
+    except Exception:
+        pass
+    if os.getenv('TESTING') == 'True':
+        return None
+
+    api_key = os.getenv('GEMINI_API_KEY')
+    if not api_key:
+        return None
+        
+    try:
+        from google import genai
+        client = genai.Client(api_key=api_key)
+        
+        pil_img = None
+        if isinstance(image_input, str):
+            pil_img = Image.open(image_input)
+        elif hasattr(image_input, 'convert'):
+            pil_img = image_input
+        else:
+            return None
+            
+        prompt = """Examine this image uploaded for a citizen science freshwater monitoring platform (Hydria).
+Determine:
+1. Does this image genuinely depict a real outdoor freshwater body (such as a lake, river, stream, pond, reservoir, canal, wetland, or natural shoreline)?
+2. Or is it an UNWANTED image, such as:
+   - A computer screen screenshot, application window, code/terminal error, or browser screenshot
+   - A document, receipt, text, diagram, chart, infographic, illustration, or meme
+   - An indoor room, household object, clothing, vehicle, or personal portrait/selfie
+   - Any non-water subject.
+
+Return ONLY a JSON object:
+{
+    "is_water_body": true or false,
+    "confidence": float between 0.0 and 1.0,
+    "detected_subject": "short description of what is depicted",
+    "rejection_reason": "if rejected, explain why; if valid, empty string"
+}
+"""
+        resp = None
+        for model_name in ['gemini-flash-latest', 'gemini-2.5-flash']:
+            try:
+                resp = client.models.generate_content(
+                    model=model_name,
+                    contents=[prompt, pil_img]
+                )
+                if resp and resp.text:
+                    break
+            except Exception:
+                continue
+                
+        if not resp or not resp.text:
+            return None
+            
+        raw_text = resp.text.strip()
+        if raw_text.startswith("```"):
+            parts = raw_text.split("```")
+            if len(parts) >= 2:
+                raw_text = parts[1]
+                if raw_text.startswith("json"):
+                    raw_text = raw_text[4:]
+        raw_text = raw_text.strip()
+        
+        data = json.loads(raw_text)
+        is_water = bool(data.get('is_water_body', False))
+        subject = str(data.get('detected_subject', '')).strip()
+        reason = str(data.get('rejection_reason', '')).strip()
+        return is_water, subject, reason
+    except Exception as e:
+        print(f"[ImageValidator] Gemini Vision check fallback: {e}")
+        return None
+
+def check_photo_suitability(image, file_path=None):
+    """
+    Check 3: AI Vision + local heuristic check for unwanted pictures,
+    blank/corrupt photos, portraits, and computer screenshots.
     Returns: (is_suitable: bool, is_warning: bool, message: str)
     """
+    # 1. AI Vision Check via Gemini
+    vision_input = file_path if file_path else image
+    vision_result = validate_with_gemini_vision(vision_input)
+    if vision_result is not None:
+        is_water, subject, reason = vision_result
+        if not is_water:
+            reason_clean = reason if reason else "The uploaded image does not depict an outdoor freshwater body."
+            subj_clean = f" (Detected: {subject})" if subject else ""
+            return False, True, f"AI Vision rejection: {reason_clean}{subj_clean}. Only clear photos of real water bodies can be accepted."
+        else:
+            subj_clean = f" ({subject})" if subject else ""
+            return True, False, f"AI Vision verified: Genuine outdoor water body confirmed{subj_clean}."
+
+    # 2. Local Fallback Computer Vision Heuristics
     try:
         rgb_img = image.convert('RGB')
         w, h = rgb_img.size
         
-        # 1. Blank / uniform color detection using standard deviation
+        # Blank / uniform color detection using standard deviation
         stat = ImageStat.Stat(rgb_img)
-        # Average stddev across R, G, B channels
         avg_stddev = sum(stat.stddev) / len(stat.stddev)
         if avg_stddev < 8.0:
             return False, True, "Image appears blank or has virtually no visual details. Please upload a clear photo of the water body."
         
-        # Check extreme brightness (completely pitch black or blown-out white)
+        # Extreme brightness (completely pitch black or blown-out white)
         avg_mean = sum(stat.mean) / len(stat.mean)
         if avg_mean < 10.0:
             return False, True, "Image is completely dark/black. Please upload a visible photo taken with adequate lighting."
         if avg_mean > 250.0:
             return False, True, "Image is overexposed or solid white. Please upload a clear photo of the water body."
             
-        # 2. Thumbnail analysis for dominant color heuristics
-        thumb = rgb_img.resize((64, 64), Image.Resampling.BILINEAR)
+        # Analyze thumbnail for color distribution and screenshot detection
+        thumb = rgb_img.resize((100, 100), Image.Resampling.BILINEAR)
         if hasattr(thumb, 'get_flattened_data'):
             pixels = list(thumb.get_flattened_data())
         else:
             pixels = list(thumb.getdata())
         total_pixels = len(pixels)
         
-        # 3. Check for obvious portrait / selfie heuristic:
-        # Inspect center region (middle 50% box) for high concentration of human skin tones
+        # Center region portrait / selfie heuristic (middle 50% box)
         center_pixels = []
-        for y in range(16, 48):
-            for x in range(16, 48):
+        for y in range(25, 75):
+            for x in range(25, 75):
                 center_pixels.append(thumb.getpixel((x, y)))
         
         skin_count = 0
         for r, g, b in center_pixels:
-            # Common YCbCr / RGB skin tone bounding heuristic
-            # In RGB: R > 95, G > 40, B > 20, max(R,G,B) - min(R,G,B) > 15, |R - G| > 15, R > G, R > B
             if (r > 95 and g > 40 and b > 20 and 
                 (max(r, g, b) - min(r, g, b)) > 15 and 
                 abs(r - g) > 15 and r > g and r > b):
                 skin_count += 1
                 
         skin_ratio_center = skin_count / len(center_pixels)
-        if skin_ratio_center > 0.65:
+        if skin_ratio_center > 0.60:
             return False, True, (
-                "The uploaded image may not show the reported water body (portrait/selfie characteristics detected). "
+                "The uploaded image appears to be a portrait or selfie rather than a water body. "
                 "Please upload a clear photo of the water body."
             )
             
-        # 4. Check for natural environment / water / bank tones
-        # Count pixels that have blue, green, cyan, muddy brown, or dark river tones
+        # Screenshot / UI / Document Detection:
+        # Count unique colors, flat monochrome/grayscale pixels, and genuine saturated natural tones
+        unique_colors = len(set(pixels))
+        mono_pixels = 0
         natural_tones = 0
         for r, g, b in pixels:
-            # Blues/Cyans: B > R and B > 50
-            is_blue = (b > r and (b > g or abs(b - g) < 30)) and b > 40
-            # Greens/Algae: G > R and G > B
-            is_green = (g > r and g > b) and g > 40
-            # Browns/Mud/Silt: R > G and G > B with low saturation or earthy darks
-            is_earth = (r >= g >= b) and (r - b < 90) and r > 30
-            # Murky/Dark water tones
-            is_dark_water = (max(r, g, b) < 90 and min(r, g, b) > 10)
-            
-            if is_blue or is_green or is_earth or is_dark_water:
-                natural_tones += 1
+            saturation = max(r, g, b) - min(r, g, b)
+            # Monochromatic / grayscale / flat UI pixel
+            if saturation < 15:
+                mono_pixels += 1
+            else:
+                # Saturated natural tones
+                is_blue = (b > r and (b > g or abs(b - g) < 30)) and b > 40
+                is_green = (g > r and g > b) and g > 40
+                is_earth = (r > g >= b) and (r - b < 90) and (r - b >= 15) and r > 40
+                is_dark_water = (max(r, g, b) < 80 and min(r, g, b) > 15 and saturation >= 10)
                 
+                if is_blue or is_green or is_earth or is_dark_water:
+                    natural_tones += 1
+
+        mono_ratio = mono_pixels / total_pixels
         natural_ratio = natural_tones / total_pixels
         
-        if natural_ratio >= 0.25:
-            return True, False, "Hydria validation suggests this image is suitable for a water-body report."
-        else:
-            return True, True, "We could not confidently validate this image. Please ensure this photo clearly shows the reported water body."
+        # If very few unique colors and high monochrome ratio (typical code/document/UI screenshot)
+        if unique_colors < 650 and mono_ratio > 0.65:
+            return False, True, "Image appears to be a computer screenshot, text document, or UI capture. Please upload a genuine photo of a water body."
+            
+        if mono_ratio > 0.85:
+            return False, True, "Image appears to be a document or screen capture (excessive monochrome content). Please upload a real outdoor photo."
+            
+        if natural_ratio < 0.20:
+            return False, True, f"Image does not appear to show an outdoor water body (insufficient water or vegetation tones: {int(natural_ratio*100)}%). Please upload a clear photo of the water body."
+            
+        return True, False, "Hydria validation suggests this image is suitable for a water-body report."
             
     except Exception as e:
         return True, True, f"Image could not be fully analyzed: {str(e)}"
@@ -271,14 +389,14 @@ def validate_image_full(file_path, browser_lat, browser_lon, existing_hashes):
         img_hash = compute_dhash(img)
         is_dup, dup_rep_id = check_duplicate_image(img_hash, existing_hashes)
         if is_dup:
-            dup_msg = f"Possible duplicate image detected. This image appears to have already been submitted (Report #{dup_rep_id}). Please upload a new photo."
+            dup_msg = f"Duplicate photo detected! This photo matches an existing submission (Report #{dup_rep_id}). Duplicate photos are strictly not allowed."
             duplicate_passed = False
         else:
-            dup_msg = "No duplicate image found."
+            dup_msg = "Passed: Unique photo confirmed (no duplicates found)."
             duplicate_passed = True
             
-        # 3. Photo Suitability
-        suitable, is_suit_warn, suit_msg = check_photo_suitability(img)
+        # 3. Photo Suitability (AI Vision + Local CV)
+        suitable, is_suit_warn, suit_msg = check_photo_suitability(img, file_path=file_path)
         
         # 4. EXIF Location Verification
         exif_lat, exif_lon = extract_exif_gps(img)

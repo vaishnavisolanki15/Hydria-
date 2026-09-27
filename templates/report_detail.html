@@ -280,23 +280,43 @@
     </div>
 </div>
 
-<!-- Bottom Section: Hydria Environmental Insights in Full Space Card -->
+<!-- Bottom Section: Hydria Environmental Insights (Powered by Gemini AI) -->
 <div class="diagnostic-card-full">
-    <div class="diagnostic-header">
+    <div class="diagnostic-header" style="flex-wrap: wrap; gap: 1rem;">
         <div class="diagnostic-title-box">
             <div>
-                <h3 class="diagnostic-title" style="font-size: 1.35rem; font-weight: 800; color: var(--text-primary); margin-bottom: 0.2rem;">
-                    Hydria Environmental Insights
-                </h3>
+                <div style="display: flex; align-items: center; gap: 0.6rem; flex-wrap: wrap; margin-bottom: 0.25rem;">
+                    <h3 class="diagnostic-title" style="font-size: 1.35rem; font-weight: 800; color: var(--text-primary); margin: 0;">
+                        Hydria Environmental Insights
+                    </h3>
+                    {% if insight.is_ai %}
+                        <span class="badge" style="background: linear-gradient(135deg, #1e3a8a, #0284c7); color: #ffffff; font-weight: 700; font-size: 0.78rem; padding: 0.25rem 0.65rem; border-radius: 9999px; box-shadow: 0 2px 8px rgba(2, 132, 199, 0.35);">
+                            ✨ Powered by Gemini AI
+                        </span>
+                    {% else %}
+                        <span class="badge" style="background: var(--bg-card-subtle); color: var(--text-secondary); border: 1px solid var(--border-color); font-size: 0.75rem;">
+                            ⚙️ Rule Engine Baseline
+                        </span>
+                    {% endif %}
+                </div>
                 <div style="font-size: 0.85rem; color: var(--text-muted);">
-                    Freshwater health assessment based on citizen observations
+                    AI ecological assessment based on sensory metrics and photo evidence
                 </div>
             </div>
         </div>
 
-        <span class="badge {{ insight.badge_class }}" style="font-size: 0.88rem; padding: 0.4rem 1rem;">
-            {{ insight.concern_level }}
-        </span>
+        <div style="display: flex; align-items: center; gap: 0.65rem; flex-wrap: wrap;">
+            {% if current_user %}
+                <form action="{{ url_for('reanalyze_report', report_id=report.id) }}" method="POST" style="margin: 0;">
+                    <button type="submit" class="btn btn-secondary btn-sm" title="Re-run Gemini AI Analysis with latest prompt and data" style="font-size: 0.8rem; display: flex; align-items: center; gap: 0.35rem;">
+                        <span>🔄 Re-analyze with Gemini</span>
+                    </button>
+                </form>
+            {% endif %}
+            <span class="badge {{ insight.badge_class }}" style="font-size: 0.88rem; padding: 0.4rem 1rem;">
+                {{ insight.concern_level }}
+            </span>
+        </div>
     </div>
 
     <!-- Severity Meter Bar -->
@@ -308,19 +328,72 @@
             <div class="severity-seg {% if insight.concern_score >= 6 %}active-high{% endif %}"></div>
         </div>
         <span style="font-size: 0.95rem; font-weight: 700; color: var(--text-primary);">
-            Status: <span style="color: {% if insight.concern_score >= 6 %}#dc2626{% elif insight.concern_score >= 3 %}#d97706{% else %}#059669{% endif %}; font-weight: 800;">{{ insight.concern_level }}</span>
+            Score: <strong>{{ insight.concern_score }}/10</strong> &bull;
+            <span style="color: {% if insight.concern_score >= 6 %}#dc2626{% elif insight.concern_score >= 3 %}#d97706{% else %}#059669{% endif %}; font-weight: 800;">
+                {{ insight.concern_level }}
+            </span>
         </span>
     </div>
 
     <!-- Executive Diagnostic Summary Box -->
     <div style="background: var(--bg-card-subtle); border-left: 4px solid var(--primary); padding: 1.25rem 1.5rem; border-radius: 0 var(--radius-md) var(--radius-md) 0; margin-bottom: 1.5rem;">
         <div style="font-size: 0.78rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.05em; color: var(--primary); margin-bottom: 0.4rem;">
-            Summary of Observations
+            Executive Ecological Assessment
         </div>
         <p style="font-size: 1rem; line-height: 1.65; color: var(--text-primary); margin: 0;">
             {{ insight.summary }}
         </p>
     </div>
+
+    <!-- 2-Column AI Grid: Root Causes & Health Advisory -->
+    <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(320px, 1fr)); gap: 1.25rem; margin-bottom: 1.5rem;">
+        <!-- Ecological Root Causes -->
+        {% if insight.root_causes %}
+            <div style="background: #ffffff; border: 1px solid var(--border-color); border-radius: var(--radius-md); padding: 1.25rem; box-shadow: var(--shadow-sm);">
+                <div style="display: flex; align-items: center; gap: 0.45rem; font-weight: 700; color: #1e3a8a; font-size: 0.95rem; margin-bottom: 0.75rem;">
+                    <span>🔬</span>
+                    <span>Probable Ecological Root Causes</span>
+                </div>
+                <ul style="list-style: none; padding: 0; margin: 0;">
+                    {% for cause in insight.root_causes %}
+                        <li style="padding: 0.35rem 0; font-size: 0.88rem; color: var(--text-primary); display: flex; align-items: flex-start; gap: 0.5rem; line-height: 1.45;">
+                            <span style="color: var(--primary); font-weight: 800;">•</span>
+                            <span>{{ cause }}</span>
+                        </li>
+                    {% endfor %}
+                </ul>
+            </div>
+        {% endif %}
+
+        <!-- Public Health Advisory -->
+        <div style="background: #ffffff; border: 1px solid var(--border-color); border-radius: var(--radius-md); padding: 1.25rem; box-shadow: var(--shadow-sm);">
+            <div style="display: flex; align-items: center; gap: 0.45rem; font-weight: 700; color: #9a3412; font-size: 0.95rem; margin-bottom: 0.75rem;">
+                <span>🛡️</span>
+                <span>Community & Health Guidance</span>
+            </div>
+            <p style="font-size: 0.88rem; color: var(--text-primary); line-height: 1.55; margin: 0;">
+                {{ insight.health_advisory or insight.recommendation }}
+            </p>
+        </div>
+    </div>
+
+    <!-- Civic Action & Intervention Steps -->
+    {% if insight.civic_action_steps %}
+        <div style="background: #f8fafc; border: 1px solid #cbd5e1; border-radius: var(--radius-md); padding: 1.25rem; margin-bottom: 1.5rem;">
+            <div style="display: flex; align-items: center; gap: 0.45rem; font-weight: 700; color: #0f172a; font-size: 0.95rem; margin-bottom: 0.75rem;">
+                <span>🏛️</span>
+                <span>Recommended Civic & Remediation Actions</span>
+            </div>
+            <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 0.65rem;">
+                {% for step in insight.civic_action_steps %}
+                    <div style="background: #ffffff; border: 1px solid #e2e8f0; padding: 0.65rem 0.85rem; border-radius: var(--radius-sm); font-size: 0.85rem; color: var(--text-primary); display: flex; align-items: flex-start; gap: 0.5rem;">
+                        <span style="color: #0284c7; font-weight: 700;">→</span>
+                        <span>{{ step }}</span>
+                    </div>
+                {% endfor %}
+            </div>
+        </div>
+    {% endif %}
 
     <!-- Key Stressors Identified Grid -->
     {% if insight.flagged_items %}
@@ -328,29 +401,24 @@
             <div style="font-size: 0.78rem; font-weight: 700; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.05em; margin-bottom: 0.65rem;">
                 Noticed Environmental Indicators:
             </div>
-            <div style="display: grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); gap: 0.75rem;">
+            <div style="display: grid; grid-template-columns: repeat(auto-fill, minmax(260px, 1fr)); gap: 0.65rem;">
                 {% for item in insight.flagged_items %}
-                    <div style="background: #ffffff; border: 1px solid var(--border-color); padding: 0.75rem 1rem; border-radius: var(--radius-md); display: flex; align-items: center; gap: 0.65rem; box-shadow: var(--shadow-sm);">
+                    <div style="background: #ffffff; border: 1px solid var(--border-color); padding: 0.65rem 0.85rem; border-radius: var(--radius-md); display: flex; align-items: center; gap: 0.65rem; box-shadow: var(--shadow-sm);">
                         <span style="color: var(--primary); font-weight: 800; font-size: 1.1rem;">•</span>
-                        <span style="font-size: 0.88rem; font-weight: 600; color: var(--text-primary);">{{ item }}</span>
+                        <span style="font-size: 0.85rem; font-weight: 600; color: var(--text-primary);">{{ item }}</span>
                     </div>
                 {% endfor %}
             </div>
         </div>
     {% endif %}
 
-    <!-- Recommendation & Community Action Grid -->
-    <div style="display: grid; grid-template-columns: 3fr 2fr; gap: 1.25rem; margin-bottom: 1.75rem;">
-        <!-- Recommended Community Action -->
-        <div class="recommendation-box" style="margin: 0; display: flex; flex-direction: column; justify-content: center;">
-            <div class="rec-title">Suggested Community Follow-up</div>
-            <p class="rec-body" style="font-size: 0.95rem; margin: 0;">{{ insight.recommendation }}</p>
+    <!-- Transparency Disclaimer -->
+    <div class="diagnostic-disclaimer" style="margin: 0 0 1.5rem 0;">
+        <div style="font-weight: 700; margin-bottom: 0.25rem; color: var(--text-secondary);">
+            {{ insight.disclaimer }}
         </div>
-
-        <!-- Transparency Disclaimer -->
-        <div class="diagnostic-disclaimer" style="margin: 0; display: flex; flex-direction: column; justify-content: center;">
-            <div style="font-weight: 700; margin-bottom: 0.25rem; color: var(--text-secondary);">About this assessment:</div>
-            <div>These insights are compiled from community observations to raise local awareness and assist nearby residents with monitoring water health.</div>
+        <div style="font-size: 0.82rem; color: var(--text-muted);">
+            Engine model: {{ insight.ai_model }}. Insights are derived from observational indicators and AI Limnological analysis to assist citizen conservation efforts.
         </div>
     </div>
 

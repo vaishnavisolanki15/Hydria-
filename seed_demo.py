@@ -96,42 +96,58 @@ def generate_sample_water_image(file_path, base_color_type="green", title="Water
     blurred.save(file_path, "JPEG", quality=85)
     return file_path
 
-def seed_database():
-    """Populate initial demo users, reports, and votes."""
+def seed_database(force_reseed=False):
+    """Populate initial demo users, reports, and votes with real photographs."""
     init_db()
     conn = get_db_connection()
-    cursor = conn.cursor()
+    base_dir = os.path.dirname(os.path.abspath(__file__))
 
-    # Check if demo data already seeded
-    existing = cursor.execute("SELECT COUNT(*) as cnt FROM reports WHERE is_demo = 1").fetchone()
-    if existing['cnt'] > 0:
-        print(f"Database already contains {existing['cnt']} demo reports. Skipping re-seed.")
-        conn.close()
-        return
-
-    print("Seeding demo users and reports...")
-    
-    # 1. Create demo users
-    hashed_pwd = generate_password_hash("password123")
-    demo_users = [
-        ("Vaishnavi Sharma", "vaishnavi@example.com"),
-        ("Arjun Patel", "arjun@example.com"),
-        ("Priya Nair", "priya@example.com"),
-        ("Rohan Verma", "rohan@example.com"),
-        ("Ananya Rao", "ananya@example.com")
-    ]
-
-    user_ids = []
-    for name, email in demo_users:
-        user = cursor.execute("SELECT id FROM users WHERE email = ?", (email,)).fetchone()
-        if user:
-            user_ids.append(user['id'])
+    # Check if demo data already seeded and images exist
+    with conn.cursor() as cursor:
+        if force_reseed:
+            cursor.execute("DELETE FROM reports WHERE is_demo = 1")
+            demo_rows = []
         else:
-            cursor.execute("INSERT INTO users (name, email, password_hash) VALUES (?, ?, ?)",
-                           (name, email, hashed_pwd))
-            user_ids.append(cursor.lastrowid)
+            cursor.execute("SELECT id, image_path FROM reports WHERE is_demo = 1")
+            demo_rows = cursor.fetchall()
 
-    conn.commit()
+        all_images_exist = len(demo_rows) >= 14 and all(
+            os.path.exists(os.path.join(base_dir, r['image_path']))
+            for r in demo_rows if r.get('image_path')
+        )
+
+        if all_images_exist:
+            print(f"Database already contains {len(demo_rows)} demo reports with verified real images.")
+            conn.close()
+            return
+        elif demo_rows:
+            print(f"Found {len(demo_rows)} demo reports with missing or outdated images. Refreshing with real photos...")
+            cursor.execute("DELETE FROM reports WHERE is_demo = 1")
+
+        print("Seeding demo users and reports with real photographs...")
+        
+        # 1. Create demo users
+        hashed_pwd = generate_password_hash("password123")
+        demo_users = [
+            ("Vaishnavi Sharma", "vaishnavi@example.com"),
+            ("Arjun Patel", "arjun@example.com"),
+            ("Priya Nair", "priya@example.com"),
+            ("Rohan Verma", "rohan@example.com"),
+            ("Ananya Rao", "ananya@example.com")
+        ]
+
+        user_ids = []
+        for name, email in demo_users:
+            cursor.execute("SELECT id FROM users WHERE email = %s", (email,))
+            user = cursor.fetchone()
+            if user:
+                user_ids.append(user['id'])
+            else:
+                cursor.execute(
+                    "INSERT INTO users (name, email, password_hash) VALUES (%s, %s, %s)",
+                    (name, email, hashed_pwd)
+                )
+                user_ids.append(cursor.lastrowid)
 
     # 2. Demo reports specification
     base_dir = os.path.dirname(os.path.abspath(__file__))
@@ -390,67 +406,66 @@ def seed_database():
         "Mithi River (CST Road)": "real_mithi_river.jpg",
         "Najafgarh Industrial Drain": "real_bali_polluted_river.jpg",
         "Yamuna River (Nigambodh Ghat)": "real_yamuna_delhi.jpg",
-        "Yamuna River (Kalindi Kunj)": "real_yamuna_delhi.jpg",
+        "Yamuna River (Kalindi Kunj)": "photo_riverside_canal.jpg",
         "Kshipra River (Ram Ghat)": "photo_river_ghat.jpg",
-        "East Industrial River Bend": "real_mithi_river.jpg",
-        "Bilawali Lake Shore": "real_bellandur_lake.jpg",
+        "East Industrial River Bend": "photo_reservoir_algae.jpg",
+        "Bilawali Lake Shore": "photo_green_lake.jpg",
         "Mahalakshmi Pond": "photo_lily_pond.jpg",
-        "North Canal Drainage": "real_bali_polluted_river.jpg",
+        "North Canal Drainage": "photo_city_pond.jpg",
         "Umngot River (Dawki)": "real_dawki_river.jpg",
         "Dal Lake (Hazratbal Basin)": "real_dal_lake.jpg",
         "Lake Pichola": "real_lake_pichola.jpg",
         "Pangong Tso": "real_pangong_tso.jpg",
     }
 
-    for i, r in enumerate(demo_reports):
-        photo_filename = photo_map.get(r["name"])
-        if photo_filename and os.path.exists(os.path.join(uploads_dir, photo_filename)):
-            rel_img_path = f"uploads/{photo_filename}"
-            full_img_path = os.path.join(uploads_dir, photo_filename)
-        else:
-            filename = f"demo_report_{i+1}.jpg"
-            full_img_path = os.path.join(uploads_dir, filename)
-            generate_sample_water_image(full_img_path, base_color_type=r["color_type"], title=r["name"])
-            rel_img_path = f"uploads/{filename}"
+    # Insert demo reports
+    with conn.cursor() as cursor:
+        for i, r in enumerate(demo_reports):
+            photo_filename = photo_map.get(r["name"])
+            if photo_filename and os.path.exists(os.path.join(uploads_dir, photo_filename)):
+                rel_img_path = f"uploads/{photo_filename}"
+                full_img_path = os.path.join(uploads_dir, photo_filename)
+            else:
+                filename = f"demo_report_{i+1}.jpg"
+                full_img_path = os.path.join(uploads_dir, filename)
+                generate_sample_water_image(full_img_path, base_color_type=r["color_type"], title=r["name"])
+                rel_img_path = f"uploads/{filename}"
 
-        # Calculate dHash
-        with Image.open(full_img_path) as img:
-            img_hash = compute_dhash(img) or f"demohash_{i+1:08x}"
-            
-        u_id = user_ids[r["user_idx"]]
-        cursor.execute("""
-            INSERT INTO reports (
-                user_id, water_body_name, water_body_type, latitude, longitude,
-                water_colour, smell, algae, visible_waste, water_appearance,
-                dead_fish, additional_observation, image_path, image_hash, status, is_demo
-            ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 1)
-        """, (
-            u_id, r["name"], r["type"], r["lat"], r["lon"],
-            r["colour"], r["smell"], r["algae"], r["waste"], r["appearance"],
-            r["dead_fish"], r["observation"], rel_img_path, img_hash, r["status"]
-        ))
-        report_id = cursor.lastrowid
+            # Calculate dHash
+            with Image.open(full_img_path) as img:
+                img_hash = compute_dhash(img) or f"demohash_{i+1:08x}"
+                
+            u_id = user_ids[r["user_idx"]]
+            cursor.execute("""
+                INSERT INTO reports (
+                    user_id, water_body_name, water_body_type, latitude, longitude,
+                    water_colour, smell, algae, visible_waste, water_appearance,
+                    dead_fish, additional_observation, image_path, image_hash, status, is_demo
+                ) VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, 1)
+            """, (
+                u_id, r["name"], r["type"], r["lat"], r["lon"],
+                r["colour"], r["smell"], r["algae"], r["waste"], r["appearance"],
+                r["dead_fish"], r["observation"], rel_img_path, img_hash, r["status"]
+            ))
+            report_id = cursor.lastrowid
 
-        # Seed votes
-        vote_count = r["votes"]
-        # Seed up to vote_count votes from random or available users
-        voter_user_ids = list(user_ids)
-        # If vote_count > available users, make extra mock user IDs if needed or cycle
-        for v_idx in range(min(vote_count, len(voter_user_ids))):
-            try:
-                cursor.execute("INSERT OR IGNORE INTO votes (user_id, report_id) VALUES (?, ?)",
-                               (voter_user_ids[v_idx], report_id))
-            except Exception:
-                pass
+            # Seed votes
+            vote_count = r["votes"]
+            voter_user_ids = list(user_ids)
+            for v_idx in range(min(vote_count, len(voter_user_ids))):
+                try:
+                    cursor.execute("INSERT IGNORE INTO votes (user_id, report_id) VALUES (%s, %s)",
+                                   (voter_user_ids[v_idx], report_id))
+                except Exception:
+                    pass
 
-        # Log validation entry
-        cursor.execute("""
-            INSERT INTO validations (
-                report_id, file_valid, duplicate_check, image_suitability, location_check, missing_fields, validation_message
-            ) VALUES (?, 1, 1, 1, 1, '', 'Validated during report intake')
-        """, (report_id,))
+            # Log validation entry
+            cursor.execute("""
+                INSERT INTO validations (
+                    report_id, file_valid, duplicate_check, image_suitability, location_check, missing_fields, validation_message
+                ) VALUES (%s, 1, 1, 1, 1, '', 'Validated during report intake')
+            """, (report_id,))
 
-    conn.commit()
     conn.close()
     print("Demo dataset seeded successfully!")
 

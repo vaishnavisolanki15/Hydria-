@@ -4,24 +4,27 @@
 
 {% block content %}
 <div class="report-wizard">
-    <div style="text-align: center; margin-bottom: 1.5rem;">
-        <h1 style="font-size: 1.85rem; font-weight: 800; color: var(--text-primary); margin-bottom: 0.35rem;">
+    <div style="text-align: center; margin-bottom: 2rem;">
+        <span style="display: inline-block; background: #e0f2fe; color: #0284c7; font-size: 0.78rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.08em; padding: 0.25rem 0.75rem; border-radius: 9999px; margin-bottom: 0.5rem;">
+            Citizen Science Observation
+        </span>
+        <h1 style="font-size: 2rem; font-weight: 800; color: var(--text-primary); margin-bottom: 0.4rem; letter-spacing: -0.02em;">
             Report Water Body
         </h1>
-        <p style="color: var(--text-secondary); font-size: 0.95rem;">
-            Simple observations from citizens help protect local freshwater systems.
+        <p style="color: var(--text-secondary); font-size: 0.96rem; max-width: 580px; margin: 0 auto;">
+            Record verified observations and photograph local freshwater systems to monitor and preserve community water quality.
         </p>
     </div>
 
     <!-- Step Progress Stepper Indicator -->
-    <div class="step-indicator">
-        <div class="step-pill active">
-            <span>1</span> Location &amp; Observation
+    <div class="step-indicator" style="margin-bottom: 2rem;">
+        <div class="step-pill active" id="step-pill-1">
+            <span>1</span> Location &amp; Observations
         </div>
-        <div class="step-pill">
+        <div class="step-pill" id="step-pill-2">
             <span>2</span> Upload Evidence
         </div>
-        <div class="step-pill">
+        <div class="step-pill" id="step-pill-3">
             <span>3</span> Hydria Verification
         </div>
     </div>
@@ -31,79 +34,161 @@
         <input type="hidden" id="latitude-input" name="latitude" value="{{ form_data.latitude or '' }}">
         <input type="hidden" id="longitude-input" name="longitude" value="{{ form_data.longitude or '' }}">
 
-        <!-- STEP 1: LOCATION & OBSERVATION -->
-        <div class="card" style="margin-bottom: 1.5rem;">
-            <div class="card-header" style="border-bottom: 1px solid var(--border-color); padding-bottom: 0.75rem;">
-                <h2 style="font-size: 1.2rem; font-weight: 700; color: var(--primary);">
-                    Step 1 of 3: Location &amp; Observations
-                </h2>
-                <p style="font-size: 0.85rem; color: var(--text-secondary); margin-top: 0.2rem;">
-                    Location is acquired using your device's browser GPS, or entered manually below.
-                </p>
+        <!-- Draft Auto-Save Restored Notice Banner -->
+        <div id="draft-notice" style="display: none; margin-bottom: 1.5rem; background: #f0fdf4; border: 1px solid #86efac; border-left: 4px solid #16a34a; padding: 0.85rem 1.25rem; border-radius: 8px; align-items: center; justify-content: space-between; gap: 1rem;">
+            <div style="display: flex; align-items: center; gap: 0.75rem;">
+                <span style="font-size: 1.35rem;">💾</span>
+                <div>
+                    <div style="font-weight: 700; color: #166534; font-size: 0.95rem;">Unsaved Draft Restored</div>
+                    <div style="font-size: 0.83rem; color: #15803d;">We automatically recovered your in-progress observation details from your previous session.</div>
+                </div>
+            </div>
+            <button type="button" id="btn-clear-draft" class="btn btn-secondary btn-sm" style="font-size: 0.8rem; padding: 0.35rem 0.85rem; white-space: nowrap;">
+                Discard Draft
+            </button>
+        </div>
+
+        <!-- =============================================================
+             STEP 1: LOCATION & OBSERVATIONS CARD
+             ============================================================= -->
+        <div class="report-section-card">
+            <div style="border-bottom: 1px solid var(--border-color); padding-bottom: 1rem; margin-bottom: 1.5rem;">
+                <div style="display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 0.5rem;">
+                    <div>
+                        <h2 style="font-size: 1.25rem; font-weight: 700; color: var(--text-primary); display: flex; align-items: center; gap: 0.5rem;">
+                            <span>Step 1 of 3: Location &amp; Observations</span>
+                        </h2>
+                        <p style="font-size: 0.86rem; color: var(--text-secondary); margin-top: 0.25rem;">
+                            Type any place or lake name to trace it on the live map, click the map to place a pin, or use your GPS.
+                        </p>
+                    </div>
+                </div>
             </div>
 
-            <!-- Location Detection Box with Automatic Sensor & Manual Fallback -->
-            <div class="form-group">
-                <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 0.4rem;">
-                    <label class="form-label" style="margin-bottom: 0;">
-                        Water Body Location <span class="required">*</span>
+            <!-- Interactive Location Tracer & Map Component -->
+            <div class="loc-picker-container">
+                <div class="loc-picker-header">
+                    <label class="form-label" style="margin-bottom: 0; font-size: 0.92rem; font-weight: 700; color: var(--text-primary); display: flex; align-items: center; gap: 0.4rem;">
+                        <span>📍 Water Body Location</span>
+                        <span class="required">*</span>
                     </label>
-                    <button type="button" id="toggle-manual-loc-btn" class="btn btn-secondary btn-sm" style="padding: 0.22rem 0.65rem; font-size: 0.78rem;">
-                        Manual Coordinates
-                    </button>
+                    <span id="loc-status-chip" class="loc-status-chip untraced">
+                        <span style="font-size: 0.75rem;">●</span>
+                        <span id="loc-status-text">Location Not Traced</span>
+                    </span>
                 </div>
 
-                <div id="location-status" class="location-box">
-                    <div style="display: flex; align-items: center; gap: 0.6rem;">
-                        <span class="location-pulse-dot"></span>
-                        <span style="font-size: 0.92rem; color: var(--text-secondary);">Detecting your location...</span>
+                <!-- Search Bar with Live Autocomplete -->
+                <div class="loc-search-box-wrapper">
+                    <div class="loc-search-bar">
+                        <div style="position: relative; flex: 1;">
+                            <span class="loc-input-prefix-icon">🔍</span>
+                            <input type="text" id="manual-address-input" class="form-control loc-search-input" 
+                                   placeholder="Type city, neighborhood, lake, river, or address... (e.g. Upper Lake Bhopal, Palasia Indore)" 
+                                   autocomplete="off">
+                            <button type="button" id="loc-clear-btn" class="loc-clear-btn" title="Clear search">✕</button>
+                        </div>
+                        <button type="button" class="btn btn-secondary" id="btn-locate-gps" style="white-space: nowrap; padding: 0.65rem 0.95rem; font-size: 0.88rem; font-weight: 600; display: inline-flex; align-items: center; gap: 0.35rem;" title="Acquire device browser GPS">
+                            <span>🛰️</span>
+                            <span>Use GPS</span>
+                        </button>
+                        <button type="button" class="btn btn-primary" id="search-address-btn" style="white-space: nowrap; padding: 0.65rem 1.15rem; font-size: 0.88rem; font-weight: 600; display: inline-flex; align-items: center; gap: 0.4rem;">
+                            <span>Find &amp; Trace</span>
+                            <span>📍</span>
+                        </button>
+                    </div>
+
+                    <!-- Autocomplete Dropdown List -->
+                    <div id="autocomplete-dropdown" class="loc-autocomplete-dropdown"></div>
+                </div>
+
+                <!-- Search Feedback Alert -->
+                <div id="address-search-feedback" style="display: none; margin-bottom: 0.75rem; font-size: 0.84rem; border-radius: 6px; padding: 0.55rem 0.85rem; transition: all 0.2s ease;"></div>
+
+                <!-- Interactive Leaflet Map -->
+                <div class="loc-map-wrapper">
+                    <div id="location-map"></div>
+                    <div class="map-interaction-hint">
+                        💡 Click anywhere on map or drag pin to trace exact water body spot
                     </div>
                 </div>
 
-                <!-- Manual Fallback Coordinates Card -->
-                <div id="manual-location-container" class="manual-loc-card" style="display: none; margin-top: 0.75rem;">
-                    <div style="font-weight: 700; font-size: 0.88rem; color: var(--text-primary); margin-bottom: 0.25rem;">
-                        Enter Coordinates Manually
-                    </div>
-                    <p style="font-size: 0.82rem; color: var(--text-secondary); margin-bottom: 0.75rem;">
-                        If browser location access is denied or unavailable, enter coordinates directly or choose a regional preset:
-                    </p>
-                    <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 0.75rem; margin-bottom: 0.75rem;">
+                <!-- Verified Location Banner (Dynamically shown on confirmation) -->
+                <div id="loc-verified-card" class="loc-verified-card">
+                    <div class="loc-verified-info">
+                        <div class="loc-verified-icon">✓</div>
                         <div>
-                            <label class="form-label" style="font-size: 0.78rem;">Latitude (e.g. 22.7196)</label>
-                            <input type="number" step="any" id="manual-lat-input" class="form-control" placeholder="22.7196" value="{{ form_data.latitude or '' }}">
-                        </div>
-                        <div>
-                            <label class="form-label" style="font-size: 0.78rem;">Longitude (e.g. 75.8577)</label>
-                            <input type="number" step="any" id="manual-lon-input" class="form-control" placeholder="75.8577" value="{{ form_data.longitude or '' }}">
+                            <div class="loc-verified-title" id="loc-verified-title">
+                                Location Traced &amp; Verified
+                            </div>
+                            <div class="loc-verified-coords" id="loc-verified-coords">
+                                <span>Latitude: <strong id="val-lat" class="loc-coord-pill">--</strong></span>
+                                <span>Longitude: <strong id="val-lon" class="loc-coord-pill">--</strong></span>
+                                <span style="color: #166534; font-weight: 600;">✓ Traced on Map</span>
+                            </div>
                         </div>
                     </div>
-                    <div style="display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 0.5rem;">
-                        <div style="display: flex; align-items: center; gap: 0.35rem; flex-wrap: wrap;">
-                            <span style="font-size: 0.78rem; color: var(--text-muted); font-weight: 600;">Presets:</span>
-                            <button type="button" class="btn btn-secondary btn-sm preset-btn" onclick="applyPresetLocation(22.7196, 75.8577, 'Indore Regional')">Indore</button>
-                            <button type="button" class="btn btn-secondary btn-sm preset-btn" onclick="applyPresetLocation(12.9360, 77.6680, 'Bengaluru Lakes')">Bengaluru</button>
-                            <button type="button" class="btn btn-secondary btn-sm preset-btn" onclick="applyPresetLocation(28.6139, 77.2090, 'Delhi / Yamuna')">Delhi</button>
-                            <button type="button" class="btn btn-secondary btn-sm preset-btn" onclick="applyPresetLocation(19.0760, 72.8777, 'Mumbai Coastal')">Mumbai</button>
-                        </div>
-                        <button type="button" class="btn btn-primary btn-sm" id="confirm-manual-coords-btn" style="padding: 0.35rem 0.85rem; font-size: 0.82rem;">
-                            Set Coordinates
+                    <div style="display: flex; gap: 0.4rem;">
+                        <button type="button" class="btn btn-secondary btn-sm" id="btn-recenter-map" style="padding: 0.3rem 0.65rem; font-size: 0.8rem;">
+                            🎯 Re-center
                         </button>
                     </div>
                 </div>
+
+                <!-- Quick Preset Water Bodies -->
+                <div class="popular-water-bodies-row">
+                    <span class="popular-label">Popular Water Bodies:</span>
+                    <button type="button" class="btn-water-pill" onclick="tracePopularPlace('Upper Lake (Bhojtal), Bhopal', 23.2500, 77.3500, 'Lake')">💧 Upper Lake, Bhopal</button>
+                    <button type="button" class="btn-water-pill" onclick="tracePopularPlace('Sirpur Lake, Indore', 22.6950, 75.8180, 'Lake')">💧 Sirpur Lake, Indore</button>
+                    <button type="button" class="btn-water-pill" onclick="tracePopularPlace('Bellandur Lake, Bengaluru', 12.9360, 77.6680, 'Lake')">💧 Bellandur Lake</button>
+                    <button type="button" class="btn-water-pill" onclick="tracePopularPlace('Yamuna River, Delhi', 28.6653, 77.2346, 'River')">💧 Yamuna, Delhi</button>
+                    <button type="button" class="btn-water-pill" onclick="tracePopularPlace('Powai Lake, Mumbai', 19.1264, 72.9050, 'Lake')">💧 Powai Lake, Mumbai</button>
+                    <button type="button" class="btn-water-pill" onclick="tracePopularPlace('Lake Pichola, Udaipur', 24.5760, 73.6800, 'Lake')">💧 Lake Pichola, Udaipur</button>
+                    <button type="button" class="btn-water-pill" onclick="tracePopularPlace('Dal Lake, Srinagar', 34.1167, 74.8667, 'Lake')">💧 Dal Lake, Srinagar</button>
+                    <button type="button" class="btn-water-pill" onclick="tracePopularPlace('Ganga River, Varanasi', 25.3050, 83.0100, 'River')">💧 Ganga, Varanasi</button>
+                </div>
+
+                <!-- Collapsible Direct Numeric Coordinates (For Surveyors / Power Users) -->
+                <div style="border-top: 1px dashed #cbd5e1; padding-top: 0.75rem; margin-top: 0.85rem;">
+                    <button type="button" id="toggle-exact-coords-btn" style="background: none; border: none; padding: 0; color: var(--primary); font-size: 0.82rem; font-weight: 600; cursor: pointer; display: flex; align-items: center; gap: 0.35rem;">
+                        <span>⚙️ Enter custom numeric Latitude &amp; Longitude coordinates</span>
+                        <span id="coords-arrow" style="font-size: 0.7rem;">▼</span>
+                    </button>
+                    <div id="exact-coords-drawer" style="display: none; margin-top: 0.75rem;">
+                        <div class="form-grid-2" style="margin-bottom: 0.6rem;">
+                            <div>
+                                <label class="form-label" style="font-size: 0.8rem;">Latitude (e.g. 22.7196)</label>
+                                <input type="number" step="any" id="manual-lat-input" class="form-control" placeholder="22.7196" value="{{ form_data.latitude or '' }}">
+                            </div>
+                            <div>
+                                <label class="form-label" style="font-size: 0.8rem;">Longitude (e.g. 75.8577)</label>
+                                <input type="number" step="any" id="manual-lon-input" class="form-control" placeholder="75.8577" value="{{ form_data.longitude or '' }}">
+                            </div>
+                        </div>
+                        <div style="text-align: right;">
+                            <button type="button" class="btn btn-secondary btn-sm" id="confirm-manual-coords-btn" style="padding: 0.35rem 0.85rem; font-size: 0.82rem;">
+                                Set Direct Coordinates
+                            </button>
+                        </div>
+                    </div>
+                </div>
             </div>
 
-            <!-- Water Body Identification -->
-            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1rem;">
-                <div class="form-group">
+            <!-- Section 1.1: Water Body Identification -->
+            <div class="section-divider-title">
+                Water Body Identification
+            </div>
+            <div class="form-grid-2">
+                <div class="form-group" style="margin-bottom: 0;">
                     <label for="water_body_name" class="form-label">
                         Water Body Name <span class="optional">(Optional)</span>
                     </label>
                     <input type="text" id="water_body_name" name="water_body_name" class="form-control"
-                           placeholder="e.g. City Lake or North Canal" value="{{ form_data.water_body_name or '' }}">
+                           placeholder="e.g. City Lake, Bilawali Tank, River Canal" value="{{ form_data.water_body_name or '' }}">
+                    <div class="form-hint">Official or locally recognized name of this water body.</div>
                 </div>
 
-                <div class="form-group">
+                <div class="form-group" style="margin-bottom: 0;">
                     <label for="water_body_type" class="form-label">
                         Water Body Type <span class="required">*</span>
                     </label>
@@ -116,12 +201,16 @@
                         <option value="Canal" {% if form_data.water_body_type == 'Canal' %}selected{% endif %}>Canal</option>
                         <option value="Other" {% if form_data.water_body_type == 'Other' %}selected{% endif %}>Other</option>
                     </select>
+                    <div class="form-hint">Classification of the observed freshwater body.</div>
                 </div>
             </div>
 
-            <!-- Water Physical Characteristics -->
-            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1rem;">
-                <div class="form-group">
+            <!-- Section 1.2: Water Quality & Sensory Observations -->
+            <div class="section-divider-title">
+                Physical &amp; Sensory Observations
+            </div>
+            <div class="form-grid-2">
+                <div class="form-group" style="margin-bottom: 0;">
                     <label for="water_colour" class="form-label">
                         Water Colour <span class="required">*</span>
                     </label>
@@ -137,9 +226,9 @@
                     </select>
                 </div>
 
-                <div class="form-group">
+                <div class="form-group" style="margin-bottom: 0;">
                     <label for="smell" class="form-label">
-                        Smell <span class="required">*</span>
+                        Smell / Odour <span class="required">*</span>
                     </label>
                     <select id="smell" name="smell" class="form-select" required>
                         <option value="" disabled {% if not form_data.smell %}selected{% endif %}>Select observed smell...</option>
@@ -153,9 +242,9 @@
                 </div>
             </div>
 
-            <!-- Environmental Indicators -->
-            <div style="display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 1rem;">
-                <div class="form-group">
+            <!-- 3-Column Indicator Row -->
+            <div class="form-grid-3">
+                <div class="form-group" style="margin-bottom: 0;">
                     <label for="algae" class="form-label">
                         Is algae visible? <span class="required">*</span>
                     </label>
@@ -167,9 +256,9 @@
                     </select>
                 </div>
 
-                <div class="form-group">
+                <div class="form-group" style="margin-bottom: 0;">
                     <label for="visible_waste" class="form-label">
-                        Visible Waste <span class="required">*</span>
+                        Visible Waste / Litter <span class="required">*</span>
                     </label>
                     <select id="visible_waste" name="visible_waste" class="form-select" required>
                         <option value="" disabled {% if not form_data.visible_waste %}selected{% endif %}>Choose...</option>
@@ -180,9 +269,9 @@
                     </select>
                 </div>
 
-                <div class="form-group">
+                <div class="form-group" style="margin-bottom: 0;">
                     <label for="water_appearance" class="form-label">
-                        Appearance <span class="required">*</span>
+                        Overall Appearance <span class="required">*</span>
                     </label>
                     <select id="water_appearance" name="water_appearance" class="form-select" required>
                         <option value="" disabled {% if not form_data.water_appearance %}selected{% endif %}>Choose...</option>
@@ -195,41 +284,47 @@
                 </div>
             </div>
 
-            <!-- Dead fish / Additional details -->
-            <div style="display: grid; grid-template-columns: 1fr 2fr; gap: 1rem;">
-                <div class="form-group">
+            <!-- Section 1.3: Wildlife & Field Notes -->
+            <div class="section-divider-title">
+                Wildlife &amp; Field Notes
+            </div>
+            <div class="form-grid-2">
+                <div class="form-group" style="margin-bottom: 0;">
                     <label for="dead_fish" class="form-label">
-                        Dead fish/animals? <span class="optional">(Optional)</span>
+                        Dead fish or animals observed? <span class="optional">(Optional)</span>
                     </label>
                     <select id="dead_fish" name="dead_fish" class="form-select">
                         <option value="No" {% if form_data.dead_fish == 'No' or not form_data.dead_fish %}selected{% endif %}>No</option>
                         <option value="Yes" {% if form_data.dead_fish == 'Yes' %}selected{% endif %}>Yes</option>
                         <option value="Not sure" {% if form_data.dead_fish == 'Not sure' %}selected{% endif %}>Not sure</option>
                     </select>
+                    <div class="form-hint">Indicator of acute oxygen depletion or toxic contamination.</div>
                 </div>
 
-                <div class="form-group">
+                <div class="form-group" style="margin-bottom: 0;">
                     <label for="additional_observation" class="form-label">
-                        Anything else you noticed? <span class="optional">(Optional)</span>
+                        Additional Field Observations <span class="optional">(Optional)</span>
                     </label>
                     <textarea id="additional_observation" name="additional_observation" class="form-textarea" 
-                              placeholder="e.g. Construction debris, foaming water, nearby discharge pipe..." rows="2">{{ form_data.additional_observation or '' }}</textarea>
+                              placeholder="e.g. Construction runoff, foam near weir, nearby industrial pipe discharge..." rows="2" style="min-height: 48px;">{{ form_data.additional_observation or '' }}</textarea>
                 </div>
             </div>
         </div>
 
-        <!-- STEP 2: UPLOAD EVIDENCE (Section 11) -->
-        <div class="card" style="margin-bottom: 2rem;">
-            <div class="card-header" style="border-bottom: 1px solid var(--border-color); padding-bottom: 0.75rem;">
-                <h2 style="font-size: 1.2rem; font-weight: 700; color: var(--primary);">
-                    Step 2 of 3: Upload Evidence
+        <!-- =============================================================
+             STEP 2: UPLOAD EVIDENCE CARD
+             ============================================================= -->
+        <div class="report-section-card">
+            <div style="border-bottom: 1px solid var(--border-color); padding-bottom: 1rem; margin-bottom: 1.5rem;">
+                <h2 style="font-size: 1.25rem; font-weight: 700; color: var(--text-primary);">
+                    Step 2 of 3: Upload Evidence Photo
                 </h2>
-                <p style="font-size: 0.85rem; color: var(--text-secondary); margin-top: 0.2rem;">
-                    Upload a clear photo of the water body. Your photo helps Hydria verify the report.
+                <p style="font-size: 0.86rem; color: var(--text-secondary); margin-top: 0.25rem;">
+                    Upload a clear photo of the water body. Hydria validates visual authenticity and coordinates before publishing.
                 </p>
             </div>
 
-            <div class="form-group">
+            <div class="form-group" style="margin-bottom: 0;">
                 <label for="image-input" class="form-label">
                     Water Body Photo <span class="required">*</span>
                     <span class="optional">(JPG, JPEG, PNG, WEBP &bull; Max 5 MB)</span>
@@ -237,36 +332,42 @@
 
                 <div class="image-upload-zone" onclick="document.getElementById('image-input').click();">
                     <div style="margin-bottom: 0.5rem; color: var(--primary);">
-                        <svg width="42" height="42" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round">
+                        <svg width="44" height="44" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round">
                             <path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"/>
                             <circle cx="12" cy="13" r="4"/>
                         </svg>
                     </div>
-                    <div style="font-weight: 600; color: var(--primary);">Click or tap to choose an image</div>
-                    <div style="font-size: 0.82rem; color: var(--text-muted); margin-top: 0.25rem;">
-                        Supported formats: JPG, PNG, WEBP (Max 5MB)
+                    <div style="font-weight: 700; color: var(--primary); font-size: 1rem;">
+                        Click or tap to choose photo
+                    </div>
+                    <div style="font-size: 0.82rem; color: var(--text-muted); margin-top: 0.3rem;">
+                        Supported formats: JPG, PNG, WEBP &bull; Max size 5 MB
                     </div>
                 </div>
 
                 <input type="file" id="image-input" name="image" accept=".jpg,.jpeg,.png,.webp" style="display: none;">
 
-                <!-- Instant Image Preview (Section 11) -->
-                <div id="preview-container" class="preview-container" style="display: none;">
-                    <div style="font-size: 0.85rem; font-weight: 600; color: var(--text-secondary); margin-bottom: 0.5rem;">
-                        Selected Photo Preview:
+                <!-- Instant Image Preview -->
+                <div id="preview-container" class="preview-container" style="display: none; margin-top: 1rem;">
+                    <div style="font-size: 0.85rem; font-weight: 600; color: var(--text-secondary); margin-bottom: 0.5rem; display: flex; align-items: center; justify-content: space-between;">
+                        <span>Selected Photo Preview:</span>
+                        <button type="button" class="btn btn-secondary btn-sm" onclick="document.getElementById('image-input').click();" style="padding: 0.2rem 0.6rem; font-size: 0.78rem;">Change Photo</button>
                     </div>
-                    <img id="image-preview" class="preview-img" src="" alt="Selected water body photo">
+                    <img id="image-preview" class="preview-img" src="" alt="Selected water body photo" style="border-radius: 8px; max-height: 280px; width: 100%; object-fit: cover; border: 1px solid var(--border-color);">
                 </div>
             </div>
         </div>
 
-        <!-- Submit & Validation Action -->
-        <div style="display: flex; justify-content: flex-end; gap: 1rem;">
-            <a href="{{ url_for('dashboard') }}" class="btn btn-secondary">
+        <!-- =============================================================
+             SUBMISSION ACTIONS
+             ============================================================= -->
+        <div style="display: flex; justify-content: flex-end; align-items: center; gap: 1rem; margin-top: 1.5rem;">
+            <a href="{{ url_for('dashboard') }}" class="btn btn-secondary" style="padding: 0.75rem 1.5rem; font-weight: 600;">
                 Cancel
             </a>
-            <button type="submit" class="btn btn-primary btn-large" id="btn-validate-report">
-                Check &amp; Verify Report &rarr;
+            <button type="submit" class="btn btn-primary btn-large" id="btn-validate-report" style="padding: 0.75rem 1.75rem; font-weight: 700; display: inline-flex; align-items: center; gap: 0.5rem;">
+                <span>Check &amp; Verify Report</span>
+                <span>&rarr;</span>
             </button>
         </div>
     </form>

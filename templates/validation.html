@@ -171,40 +171,84 @@
             </div>
         </div>
 
-        <!-- DUPLICATE REPORT ADVISORY (Section 24) -->
-        {% if nearby_reports %}
-            <div class="alert alert-warning" style="flex-direction: column; align-items: stretch;">
-                <div style="display: flex; align-items: center; gap: 0.5rem; font-weight: 700;">
-                    <span>⚠</span> A similar report already exists for this location.
+        <!-- STRICT PHOTO REJECTION ALERT (NON-WATER / SCREENSHOT) -->
+        {% if not validation.image_suitability %}
+            <div class="alert alert-error" style="flex-direction: column; align-items: stretch; border-left: 5px solid var(--danger); background: #fef2f2; margin-bottom: 1.5rem;">
+                <div style="display: flex; align-items: center; gap: 0.6rem; font-weight: 800; font-size: 1.05rem; color: #991b1b;">
+                    <span>🚫</span> PHOTO REJECTED BY AI VISION
                 </div>
-                <p style="font-size: 0.88rem; margin: 0.4rem 0 0.75rem;">
-                    Another citizen reported <strong>{{ nearby_reports[0].water_body_name }}</strong> today (~{{ nearby_reports[0].distance_meters }}m away). Would you like to view the existing report or continue anyway?
+                <p style="font-size: 0.92rem; color: #7f1d1d; margin: 0.4rem 0 0.75rem; line-height: 1.5;">
+                    {{ validation.suitability_msg }}
+                    <br>
+                    <strong>Policy:</strong> Hydria only accepts real photographs of outdoor water bodies (such as ponds, lakes, rivers, streams, canals, or wetlands). Screenshots, documents, digital graphics, memes, and non-water pictures are strictly blocked.
                 </p>
-                <div style="display: flex; gap: 0.75rem;">
-                    <a href="{{ url_for('report_detail', report_id=nearby_reports[0].id) }}" class="btn btn-secondary" style="font-size: 0.85rem;" target="_blank">
-                        View Existing Report
+                <div>
+                    <a href="javascript:history.back()" class="btn btn-secondary btn-sm" style="font-weight: 600;">
+                        &larr; Upload a Genuine Water Photo
                     </a>
                 </div>
             </div>
         {% endif %}
 
-        <!-- FINAL SUBMIT OR FIX ACTIONS (Section 17 & 19) -->
+        <!-- STRICT DUPLICATE PHOTO BLOCK ALERT -->
+        {% if duplicate_photo_found %}
+            <div class="alert alert-error" style="flex-direction: column; align-items: stretch; border-left: 5px solid var(--danger); background: #fef2f2; margin-bottom: 1.5rem;">
+                <div style="display: flex; align-items: center; gap: 0.6rem; font-weight: 800; font-size: 1.05rem; color: #991b1b;">
+                    <span>🚫</span> DUPLICATE PHOTO NOT ALLOWED
+                </div>
+                <p style="font-size: 0.92rem; color: #7f1d1d; margin: 0.4rem 0 0.75rem; line-height: 1.5;">
+                    {{ validation.duplicate_msg }}
+                    <br>
+                    <strong>Policy:</strong> To preserve authentic citizen science data, duplicate photos cannot be submitted to the Hydria platform. Please take a new, original photo of the water body.
+                </p>
+                <div>
+                    <a href="javascript:history.back()" class="btn btn-secondary btn-sm" style="font-weight: 600;">
+                        &larr; Choose a Different Photo
+                    </a>
+                </div>
+            </div>
+        {% endif %}
+
+        <!-- STRICT DUPLICATE REPORT BLOCK ALERT -->
+        {% if duplicate_report_found and nearby_reports %}
+            <div class="alert alert-error" style="flex-direction: column; align-items: stretch; border-left: 5px solid var(--danger); background: #fef2f2; margin-bottom: 1.5rem;">
+                <div style="display: flex; align-items: center; gap: 0.6rem; font-weight: 800; font-size: 1.05rem; color: #991b1b;">
+                    <span>🚫</span> DUPLICATE REPORT NOT ALLOWED
+                </div>
+                <p style="font-size: 0.92rem; color: #7f1d1d; margin: 0.4rem 0 0.75rem; line-height: 1.5;">
+                    A report for <strong>{{ nearby_reports[0].water_body_name }}</strong> was already submitted today (Report #{{ nearby_reports[0].id }} &bull; {{ nearby_reports[0].distance_meters }}m away).
+                    <br>
+                    <strong>Policy:</strong> Duplicate reports for the same water body on the same day are strictly not allowed. Instead of submitting a duplicate, please corroborate the existing report by voting <em>"I observed this too"</em>.
+                </p>
+                <div style="display: flex; gap: 0.75rem; flex-wrap: wrap;">
+                    <a href="{{ url_for('report_detail', report_id=nearby_reports[0].id) }}" class="btn btn-primary btn-sm" target="_blank">
+                        View Existing Report & Corroborate &rarr;
+                    </a>
+                    <a href="{{ url_for('report_page') }}" class="btn btn-secondary btn-sm">
+                        Report Another Water Body
+                    </a>
+                </div>
+            </div>
+        {% endif %}
+
+        <!-- FINAL SUBMIT OR FIX ACTIONS -->
         {% if ready_to_submit %}
             <div class="card" style="text-align: center; background: #f0fdf4; border-color: #86efac; padding: 2rem;">
+                <div style="font-size: 2.2rem; margin-bottom: 0.35rem;">✨</div>
                 <h3 style="font-size: 1.3rem; font-weight: 700; color: #166534; margin-bottom: 0.35rem;">
                     Your report looks ready!
                 </h3>
                 <p style="font-size: 0.95rem; color: #15803d; max-width: 500px; margin: 0 auto 1.5rem;">
-                    All required observations and photo verifications have passed. Click below to submit your report to the community.
+                    All required observations and photo verifications have passed. No duplicate records found. Click below to submit your report to the community.
                 </p>
 
-                <form method="POST" action="{{ url_for('submit_report') }}">
+                <form method="POST" action="{{ url_for('submit_report') }}" onsubmit="try { localStorage.removeItem('hydria_report_draft'); } catch(e){}">
                     {% for key, val in form_data.items() %}
                         <input type="hidden" name="{{ key }}" value="{{ val }}">
                     {% endfor %}
                     <input type="hidden" name="temp_filename" value="{{ temp_filename }}">
                     
-                    <div style="display: flex; justify-content: center; gap: 1rem;">
+                    <div style="display: flex; justify-content: center; gap: 1rem; flex-wrap: wrap;">
                         <a href="javascript:history.back()" class="btn btn-secondary">
                             Fix Details
                         </a>
@@ -215,17 +259,31 @@
                 </form>
             </div>
         {% else %}
-            <!-- Problems Found Screen -->
+            <!-- Problems / Duplicate Found Screen -->
             <div class="card" style="text-align: center; background: #fffbeb; border-color: #fde68a; padding: 2rem;">
-                <div style="font-size: 2.2rem; margin-bottom: 0.5rem;">⚠</div>
+                <div style="font-size: 2.2rem; margin-bottom: 0.5rem;">
+                    {% if duplicate_photo_found or duplicate_report_found %}🚫{% else %}⚠{% endif %}
+                </div>
                 <h3 style="font-size: 1.3rem; font-weight: 700; color: #92400e; margin-bottom: 0.35rem;">
-                    Hydria found something to check
+                    {% if duplicate_photo_found or duplicate_report_found %}
+                        Submission Blocked: Duplicate Not Allowed
+                    {% else %}
+                        Hydria found something to check
+                    {% endif %}
                 </h3>
-                <p style="font-size: 0.95rem; color: #b45309; max-width: 500px; margin: 0 auto 1.5rem;">
-                    One or more image verification checks did not pass. Please review the checklist above and upload a suitable water photo.
+                <p style="font-size: 0.95rem; color: #b45309; max-width: 550px; margin: 0 auto 1.5rem; line-height: 1.5;">
+                    {% if duplicate_photo_found and duplicate_report_found %}
+                        Both a duplicate photograph and duplicate same-day report were detected. Submissions must be unique.
+                    {% elif duplicate_photo_found %}
+                        Duplicate photos are strictly prohibited. Please take or choose an original, unsubmitted photograph.
+                    {% elif duplicate_report_found %}
+                        A report for this water body was already submitted today. Duplicate reports are not allowed.
+                    {% else %}
+                        One or more verification checks did not pass. Please review the checklist above and upload a suitable water photo.
+                    {% endif %}
                 </p>
                 <a href="javascript:history.back()" class="btn btn-primary btn-large" id="btn-fix-report">
-                    Fix Report
+                    &larr; Fix Observation Details
                 </a>
             </div>
         {% endif %}

@@ -10,10 +10,12 @@
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Outfit:wght@500;600;700;800&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/leaflet.css') }}">
     <link rel="icon" type="image/x-icon" href="{{ url_for('static', filename='favicon.ico') }}">
     <link rel="icon" type="image/png" sizes="32x32" href="{{ url_for('static', filename='images/favicon-32x32.png') }}">
     <link rel="icon" type="image/png" sizes="192x192" href="{{ url_for('static', filename='images/hydria-icon-192.png') }}">
     <link rel="apple-touch-icon" sizes="180x180" href="{{ url_for('static', filename='images/hydria-icon-180.png') }}">
+    {% block extra_head %}{% endblock %}
 </head>
 <body>
 
@@ -80,9 +82,10 @@
     <!-- Simple Minimal Footer -->
     <footer class="footer">
         <div><strong>Hydria</strong> — From Citizen Observations to Water Insights.</div>
-        <div style="margin-top: 0.25rem;">Simple Citizen Science Water Reporting MVP &bull; Running locally with Python &amp; SQLite</div>
+        <div style="margin-top: 0.25rem;">Citizen Science Water Reporting Platform &bull; Powered by MySQL &amp; Google Gemini AI</div>
     </footer>
 
+    <script src="{{ url_for('static', filename='js/leaflet.js') }}"></script>
     <script src="{{ url_for('static', filename='js/location.js') }}"></script>
     {% block scripts %}{% endblock %}
 </body>

@@ -11,28 +11,84 @@
     </div>
 
     <div class="card">
+        <!-- Quick Access Guidance Banner -->
+        <div style="background: rgba(2, 132, 199, 0.07); border: 1px solid rgba(2, 132, 199, 0.25); border-radius: 10px; padding: 0.85rem 1rem; margin-bottom: 1.25rem; font-size: 0.88rem;">
+            <div style="display: flex; align-items: center; gap: 0.5rem; font-weight: 700; color: var(--primary-dark); margin-bottom: 0.25rem;">
+                <span>🔑</span>
+                <span>Universal Login Password: <code>password123</code></span>
+            </div>
+            <div style="color: var(--text-secondary); font-size: 0.82rem; line-height: 1.45;">
+                Enter any email below. The password is <strong>password123</strong> for all accounts.
+            </div>
+            <div style="margin-top: 0.6rem; display: flex; flex-wrap: wrap; gap: 0.4rem;">
+                <button type="button" class="btn-demo-pill" onclick="quickFill('ananya@example.com')">
+                    ananya@example.com
+                </button>
+                <button type="button" class="btn-demo-pill" onclick="quickFill('vaishnavi@example.com')">
+                    vaishnavi@example.com
+                </button>
+                <button type="button" class="btn-demo-pill" onclick="quickFill('arjun@example.com')">
+                    arjun@example.com
+                </button>
+            </div>
+        </div>
+
         <form method="POST" action="{{ url_for('login') }}">
             <div class="form-group">
-                <label for="email" class="form-label">Email</label>
+                <label for="email" class="form-label">Email Address</label>
                 <input type="email" id="email" name="email" class="form-control" 
-                       placeholder="name@example.com" value="{{ email or '' }}" required autofocus>
+                       placeholder="e.g. yourname@example.com" 
+                       value="{{ email or '' }}" required autofocus>
             </div>
 
             <div class="form-group">
-                <label for="password" class="form-label">Password</label>
+                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.35rem;">
+                    <label for="password" class="form-label" style="margin-bottom: 0;">Password</label>
+                    <span style="font-size: 0.78rem; color: var(--primary); font-weight: 600;">Default: password123</span>
+                </div>
                 <input type="password" id="password" name="password" class="form-control" 
-                       placeholder="Enter your password" required>
+                       value="password123" placeholder="password123" required>
             </div>
 
             <button type="submit" class="btn btn-primary btn-block btn-large" id="login-submit-btn">
-                Login
+                Sign In to Hydria
             </button>
         </form>
 
-        <div class="auth-footer">
-            Don't have an account? <br>
-            <a href="{{ url_for('register') }}" style="font-weight: 600;" id="create-account-link">Create account</a>
+        <div class="auth-footer" style="margin-top: 1.25rem;">
+            Want to register a custom account? <br>
+            <a href="{{ url_for('register') }}" style="font-weight: 600;" id="create-account-link">Create new account</a>
         </div>
     </div>
 </div>
+
+<style>
+.btn-demo-pill {
+    background: #ffffff;
+    border: 1px solid #bae6fd;
+    color: #0284c7;
+    padding: 0.3rem 0.65rem;
+    border-radius: 20px;
+    font-size: 0.78rem;
+    font-weight: 600;
+    cursor: pointer;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
+    transition: all 0.2s ease;
+}
+.btn-demo-pill:hover {
+    background: #0284c7;
+    color: #ffffff;
+    border-color: #0284c7;
+    transform: translateY(-1px);
+}
+</style>
+
+<script>
+function quickFill(email) {
+    var emailInput = document.getElementById('email');
+    var passwordInput = document.getElementById('password');
+    if (emailInput) emailInput.value = email;
+    if (passwordInput) passwordInput.value = 'password123';
+}
+</script>
 {% endblock %}
