@@ -11,10 +11,8 @@
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Outfit:wght@500;600;700;800&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
     <link rel="stylesheet" href="{{ url_for('static', filename='css/leaflet.css') }}">
-    <link rel="icon" type="image/x-icon" href="{{ url_for('static', filename='favicon.ico') }}">
-    <link rel="icon" type="image/png" sizes="32x32" href="{{ url_for('static', filename='images/favicon-32x32.png') }}">
-    <link rel="icon" type="image/png" sizes="192x192" href="{{ url_for('static', filename='images/hydria-icon-192.png') }}">
-    <link rel="apple-touch-icon" sizes="180x180" href="{{ url_for('static', filename='images/hydria-icon-180.png') }}">
+    <link rel="icon" type="image/png" href="{{ url_for('static', filename='images/hydria-brand.png') }}">
+    <link rel="apple-touch-icon" href="{{ url_for('static', filename='images/hydria-brand.png') }}">
     {% block extra_head %}{% endblock %}
 </head>
 <body>
@@ -23,12 +21,10 @@
     <header class="navbar">
         <div class="nav-container">
             <a href="{% if current_user %}{{ url_for('dashboard') }}{% else %}{{ url_for('login') }}{% endif %}" class="brand" id="brand-link">
-                <span class="brand-logo-badge" style="background: none; padding: 0; box-shadow: none; display: flex; align-items: center;">
-                    <img src="{{ url_for('static', filename='images/hydria-icon-64.png') }}" alt="Hydria" style="width: 28px; height: 28px; border-radius: 7px; display: block; box-shadow: 0 2px 8px rgba(2, 132, 199, 0.3);">
-                </span>
+                <img src="{{ url_for('static', filename='images/hydria-brand.png') }}" alt="Hydria" class="brand-logo-img">
                 <div class="brand-meta">
                     <span class="brand-title">Hydria</span>
-                    <span class="brand-tagline-sub">Freshwater Intelligence</span>
+                    <span class="brand-tagline-sub">Observe.Report.Protect</span>
                 </div>
             </a>
 
@@ -68,7 +64,7 @@
                 <div class="alert-container">
                     {% for category, message in messages %}
                         <div class="alert alert-{{ category if category != 'message' else 'info' }}">
-                            {% if category == 'success' %}✓{% elif category == 'error' %}⚠{% else %}ℹ{% endif %}
+                            {% if category == 'success' %}<span class="alert-status-icon">✓</span>{% elif category == 'error' %}<span class="alert-status-icon">!</span>{% else %}<span class="alert-status-icon">i</span>{% endif %}
                             <span>{{ message }}</span>
                         </div>
                     {% endfor %}
@@ -81,7 +77,7 @@
 
     <!-- Simple Minimal Footer -->
     <footer class="footer">
-        <div><strong>Hydria</strong> — From Citizen Observations to Water Insights.</div>
+        <div><strong>Hydria</strong> — Observe.Report.Protect</div>
         <div style="margin-top: 0.25rem;">Citizen Science Water Reporting Platform &bull; Powered by MySQL &amp; Google Gemini AI</div>
     </footer>
 

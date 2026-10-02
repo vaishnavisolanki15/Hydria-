@@ -1,6 +1,17 @@
+# Web framework and core routing
 Flask>=3.0.0
-Pillow>=10.0.0
 Werkzeug>=3.0.0
-pymysql>=1.1.0
+Jinja2>=3.1.2
+
+# Image processing, difference hashing (dHash), and EXIF metadata extraction
+Pillow>=10.0.0
+
+# Database connectivity (MySQL 8.0+ with caching_sha2_password support)
+PyMySQL>=1.1.0
+cryptography>=41.0.0
+
+# Environment variable configuration
 python-dotenv>=1.0.0
+
+# Google Gemini AI limnological insights and visual validation
 google-genai>=2.0.0

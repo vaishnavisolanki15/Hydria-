@@ -16,7 +16,10 @@ from werkzeug.utils import secure_filename
 from PIL import Image
 
 import database
-from image_validator import validate_image_full, compute_dhash, check_duplicate_image, check_photo_suitability
+from image_validator import (
+    validate_image_full, compute_dhash, check_duplicate_image,
+    check_photo_suitability, check_photo_suitability_and_relevance
+)
 from analysis_engine import generate_water_insight
 from seed_demo import seed_database
 
@@ -222,6 +225,15 @@ def validate_report():
     lat_str = request.form.get('latitude', '').strip()
     lon_str = request.form.get('longitude', '').strip()
 
+    # Graceful fallback: If coordinates missing but water body / location entered, attempt resolution
+    if (not lat_str or not lon_str) and water_body_name:
+        q_lower = water_body_name.lower().strip()
+        for k, v in OFFLINE_PLACES.items():
+            if k == q_lower or (len(k) >= 4 and k in q_lower) or (len(q_lower) >= 4 and q_lower in k):
+                lat_str = str(v[0])
+                lon_str = str(v[1])
+                break
+
     # Re-packaged form state for template reuse
     form_data = {
         'water_body_name': water_body_name,
@@ -308,7 +320,9 @@ def validate_report():
         temp_file_path,
         browser_lat,
         browser_lon,
-        existing_hashes
+        existing_hashes,
+        water_body_name=water_body_name,
+        water_body_type=water_body_type
     )
 
     # 5. Check Duplicate Report (same user/location/water body on the same day)
@@ -316,13 +330,15 @@ def validate_report():
 
     duplicate_photo_found = not validation_results.get('duplicate_check', True)
     duplicate_report_found = len(nearby_reports) > 0
+    photo_rel_passed = validation_results.get('photo_relevance', {}).get('passed', True)
 
-    # Determine readiness: Duplicate photos or reports are STRICTLY NOT ALLOWED!
+    # Determine readiness: Duplicate photos, duplicate reports, or non-water photos are STRICTLY NOT ALLOWED!
     ready_to_submit = (
         len(missing_fields) == 0 and
         validation_results['file_valid'] and
         not duplicate_photo_found and
         validation_results['image_suitability'] and
+        photo_rel_passed and
         not duplicate_report_found
     )
 
@@ -395,16 +411,23 @@ def submit_report():
         flash("Uploaded image session expired. Please upload your photo again.", "error")
         return redirect(url_for('report_page'))
 
-    # Strict Check 2: Server-side verification for photo suitability (blocking screenshots & non-water pictures)
+    # Strict Check 2: Server-side verification for photo suitability & water body relevance
     with Image.open(temp_path) as img:
-        img_suitable, is_suit_warn, suit_msg = check_photo_suitability(img, file_path=temp_path)
-    if not img_suitable:
+        suit_res = check_photo_suitability_and_relevance(
+            img,
+            file_path=temp_path,
+            water_body_name=water_body_name,
+            water_body_type=water_body_type,
+            browser_lat=lat,
+            browser_lon=lon
+        )
+    if not suit_res['passed']:
         if os.path.exists(temp_path):
             try:
                 os.remove(temp_path)
             except Exception:
                 pass
-        flash(f"Submission blocked: {suit_msg}", "error")
+        flash(f"Submission blocked: {suit_res['message']}", "error")
         return redirect(url_for('report_page'))
 
     # Strict Check 3: Server-side verification for duplicate photo
@@ -619,7 +642,7 @@ def reanalyze_report(report_id):
         return redirect(url_for('community'))
 
     generate_water_insight(report, image_path=report.get('image_path'), force_refresh=True)
-    flash("✨ Report successfully re-analyzed with Google Gemini AI.", "success")
+    flash("Report successfully re-analyzed with Google Gemini AI.", "success")
     return redirect(url_for('report_detail', report_id=report_id))
 
 # -------------------------------------------------------------

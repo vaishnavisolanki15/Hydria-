@@ -110,14 +110,16 @@ def check_duplicate_image(image_hash, existing_hashes, threshold=6):
             return True, rep_id
     return False, None
 
-def validate_with_gemini_vision(image_input):
+def validate_with_gemini_vision(image_input, water_body_name=None, water_body_type=None, latitude=None, longitude=None):
     """
     Classify uploaded image using Google Gemini Vision (gemini-flash-latest).
-    Accurately detects whether the image is a genuine outdoor freshwater body or
-    an unwanted image (computer screenshot, code error traceback, UI capture,
-    meme, text document, indoor item, or selfie).
+    Determines whether the photograph plausibly depicts the reported freshwater body/location
+    or is an unrelated/unwanted image (selfies, portraits, indoor rooms, unrelated buildings,
+    cars, computer screenshots, text documents, or non-water subjects).
     
-    Returns: (is_water_body: bool, detected_subject: str, rejection_reason: str) or None on failure/offline.
+    Returns structured dict:
+    {'passed': bool, 'confidence': float, 'detected_subject': str, 'reason': str}
+    or None on failure/offline.
     """
     # Skip remote API calls during automated unit test runs
     try:
@@ -144,23 +146,43 @@ def validate_with_gemini_vision(image_input):
             pil_img = image_input
         else:
             return None
-            
-        prompt = """Examine this image uploaded for a citizen science freshwater monitoring platform (Hydria).
-Determine:
-1. Does this image genuinely depict a real outdoor freshwater body (such as a lake, river, stream, pond, reservoir, canal, wetland, or natural shoreline)?
-2. Or is it an UNWANTED image, such as:
-   - A computer screen screenshot, application window, code/terminal error, or browser screenshot
-   - A document, receipt, text, diagram, chart, infographic, illustration, or meme
-   - An indoor room, household object, clothing, vehicle, or personal portrait/selfie
-   - Any non-water subject.
 
-Return ONLY a JSON object:
-{
-    "is_water_body": true or false,
+        loc_ctx = f"Coordinates: {latitude}, {longitude}" if (latitude and longitude) else "Coordinates: Not specified"
+        name_ctx = f"Reported water body: {water_body_name}" if water_body_name else "Reported water body: Unnamed"
+        type_ctx = f"Reported water body type: {water_body_type}" if water_body_type else "Reported type: Freshwater body"
+
+        prompt = f"""You are the environmental photo validator for Hydria, a citizen science freshwater monitoring platform.
+The user has submitted an environmental observation report:
+- {name_ctx}
+- {type_ctx}
+- {loc_ctx}
+
+Analyze the uploaded photograph to determine if it is relevant to this water body observation:
+
+1. Does the image plausibly depict an outdoor freshwater body or its immediate shoreline/riparian/wetland environment (such as a lake, river, pond, stream, reservoir, canal, wetland, or storm runoff channel)?
+2. Or is it an UNRELATED, UNWANTED, or INAPPROPRIATE image that clearly does NOT show the reported water observation, such as:
+   - A selfie or people-focused portrait
+   - An indoor room or indoor photograph
+   - Unrelated buildings, architecture, or interior spaces
+   - Cars, vehicles, traffic, or roads without a water body
+   - A computer screen screenshot, application window, terminal, or phone screen
+   - A document, receipt, diagram, chart, infographic, illustration, or meme
+   - Random household objects or personal items
+   - Dry, unrelated landscapes with no water body or wetland
+   - Any photograph that clearly does not show an outdoor water/environmental observation.
+
+Guidelines:
+- Do NOT reject legitimate water-body photos simply because you cannot identify the specific named lake or river from visual appearance alone. If the photo plausibly shows a real outdoor water body or shoreline consistent with the report, it should PASS.
+- If EXIF GPS is absent, evaluate visual environmental plausibility. Avoid false rejections of genuine water bodies.
+- Reject photos that clearly depict non-water subjects, indoor scenes, selfies, cars, screenshots, or unrelated landscapes.
+
+Return ONLY a valid JSON object in this format:
+{{
+    "passed": true or false,
     "confidence": float between 0.0 and 1.0,
     "detected_subject": "short description of what is depicted",
-    "rejection_reason": "if rejected, explain why; if valid, empty string"
-}
+    "reason": "Clear explanation. If passed: 'Photo appears relevant to the reported water observation.' If rejected: 'This photo does not appear to match the reported water observation. Please upload a relevant water-body photograph.'"
+}}
 """
         resp = None
         for model_name in ['gemini-flash-latest', 'gemini-2.5-flash']:
@@ -187,32 +209,85 @@ Return ONLY a JSON object:
         raw_text = raw_text.strip()
         
         data = json.loads(raw_text)
-        is_water = bool(data.get('is_water_body', False))
+        passed = bool(data.get('passed', data.get('is_water_body', False)))
+        confidence = float(data.get('confidence', 0.9)) if data.get('confidence') is not None else 0.9
         subject = str(data.get('detected_subject', '')).strip()
-        reason = str(data.get('rejection_reason', '')).strip()
-        return is_water, subject, reason
+        reason = str(data.get('reason', data.get('rejection_reason', ''))).strip()
+
+        if passed and not reason:
+            reason = "Photo appears relevant to the reported water observation."
+        elif not passed and not reason:
+            reason = "This photo does not appear to match the reported water observation. Please upload a relevant water-body photograph."
+
+        return {
+            'passed': passed,
+            'confidence': confidence,
+            'detected_subject': subject,
+            'reason': reason
+        }
     except Exception as e:
         print(f"[ImageValidator] Gemini Vision check fallback: {e}")
         return None
 
-def check_photo_suitability(image, file_path=None):
+def check_photo_suitability_and_relevance(image, file_path=None, water_body_name=None, water_body_type=None, browser_lat=None, browser_lon=None):
     """
-    Check 3: AI Vision + local heuristic check for unwanted pictures,
-    blank/corrupt photos, portraits, and computer screenshots.
-    Returns: (is_suitable: bool, is_warning: bool, message: str)
+    Validate photo suitability and visual water-body relevance.
+    Evaluates:
+    1. Gemini Vision analysis (when available) against reported water body context.
+    2. Local computer vision heuristics for corrupt/blank/dark images, selfies/portraits,
+       screenshots, documents, and natural water/environmental tone distribution.
+    
+    Returns structured dict:
+    {
+        'passed': bool,
+        'status': 'pass' or 'fail',
+        'title': 'Photo verification',
+        'message': str,
+        'reason': str,
+        'confidence': float,
+        'detected_subject': str,
+        'is_warning': bool
+    }
     """
-    # 1. AI Vision Check via Gemini
+    # 1. AI Vision Check via Gemini with observation context
     vision_input = file_path if file_path else image
-    vision_result = validate_with_gemini_vision(vision_input)
+    vision_result = validate_with_gemini_vision(
+        vision_input,
+        water_body_name=water_body_name,
+        water_body_type=water_body_type,
+        latitude=browser_lat,
+        longitude=browser_lon
+    )
     if vision_result is not None:
-        is_water, subject, reason = vision_result
-        if not is_water:
-            reason_clean = reason if reason else "The uploaded image does not depict an outdoor freshwater body."
-            subj_clean = f" (Detected: {subject})" if subject else ""
-            return False, True, f"AI Vision rejection: {reason_clean}{subj_clean}. Only clear photos of real water bodies can be accepted."
+        passed = vision_result['passed']
+        confidence = vision_result.get('confidence', 0.9)
+        subject = vision_result.get('detected_subject', '')
+        reason = vision_result.get('reason', '')
+        
+        if passed:
+            user_msg = "Photo appears relevant to the reported water observation."
+            return {
+                'passed': True,
+                'status': 'pass',
+                'title': 'Photo verification',
+                'message': user_msg,
+                'reason': reason or user_msg,
+                'confidence': confidence,
+                'detected_subject': subject,
+                'is_warning': False
+            }
         else:
-            subj_clean = f" ({subject})" if subject else ""
-            return True, False, f"AI Vision verified: Genuine outdoor water body confirmed{subj_clean}."
+            user_msg = "This photo does not appear to match the reported water observation. Please upload a relevant water-body photograph."
+            return {
+                'passed': False,
+                'status': 'fail',
+                'title': 'Photo verification',
+                'message': user_msg,
+                'reason': reason or user_msg,
+                'confidence': confidence,
+                'detected_subject': subject,
+                'is_warning': False
+            }
 
     # 2. Local Fallback Computer Vision Heuristics
     try:
@@ -223,14 +298,41 @@ def check_photo_suitability(image, file_path=None):
         stat = ImageStat.Stat(rgb_img)
         avg_stddev = sum(stat.stddev) / len(stat.stddev)
         if avg_stddev < 8.0:
-            return False, True, "Image appears blank or has virtually no visual details. Please upload a clear photo of the water body."
+            return {
+                'passed': False,
+                'status': 'fail',
+                'title': 'Photo verification',
+                'message': "This photo does not appear to match the reported water observation. Please upload a relevant water-body photograph.",
+                'reason': "Image appears blank or has virtually no visual details.",
+                'confidence': 0.95,
+                'detected_subject': "Blank image",
+                'is_warning': False
+            }
         
         # Extreme brightness (completely pitch black or blown-out white)
         avg_mean = sum(stat.mean) / len(stat.mean)
         if avg_mean < 10.0:
-            return False, True, "Image is completely dark/black. Please upload a visible photo taken with adequate lighting."
+            return {
+                'passed': False,
+                'status': 'fail',
+                'title': 'Photo verification',
+                'message': "This photo does not appear to match the reported water observation. Please upload a relevant water-body photograph.",
+                'reason': "Image is completely dark/black. Please upload a visible photo taken with adequate lighting.",
+                'confidence': 0.95,
+                'detected_subject': "Dark image",
+                'is_warning': False
+            }
         if avg_mean > 250.0:
-            return False, True, "Image is overexposed or solid white. Please upload a clear photo of the water body."
+            return {
+                'passed': False,
+                'status': 'fail',
+                'title': 'Photo verification',
+                'message': "This photo does not appear to match the reported water observation. Please upload a relevant water-body photograph.",
+                'reason': "Image is overexposed or solid white.",
+                'confidence': 0.95,
+                'detected_subject': "Overexposed image",
+                'is_warning': False
+            }
             
         # Analyze thumbnail for color distribution and screenshot detection
         thumb = rgb_img.resize((100, 100), Image.Resampling.BILINEAR)
@@ -254,14 +356,19 @@ def check_photo_suitability(image, file_path=None):
                 skin_count += 1
                 
         skin_ratio_center = skin_count / len(center_pixels)
-        if skin_ratio_center > 0.60:
-            return False, True, (
-                "The uploaded image appears to be a portrait or selfie rather than a water body. "
-                "Please upload a clear photo of the water body."
-            )
+        if skin_ratio_center > 0.50:
+            return {
+                'passed': False,
+                'status': 'fail',
+                'title': 'Photo verification',
+                'message': "This photo does not appear to match the reported water observation. Please upload a relevant water-body photograph.",
+                'reason': "The uploaded image appears to be a portrait or selfie rather than a water body.",
+                'confidence': 0.90,
+                'detected_subject': "Portrait / selfie",
+                'is_warning': False
+            }
             
         # Screenshot / UI / Document Detection:
-        # Count unique colors, flat monochrome/grayscale pixels, and genuine saturated natural tones
         unique_colors = len(set(pixels))
         mono_pixels = 0
         natural_tones = 0
@@ -271,7 +378,7 @@ def check_photo_suitability(image, file_path=None):
             if saturation < 15:
                 mono_pixels += 1
             else:
-                # Saturated natural tones
+                # Saturated natural tones (blues, greens, earth tones, dark water)
                 is_blue = (b > r and (b > g or abs(b - g) < 30)) and b > 40
                 is_green = (g > r and g > b) and g > 40
                 is_earth = (r > g >= b) and (r - b < 90) and (r - b >= 15) and r > 40
@@ -283,20 +390,80 @@ def check_photo_suitability(image, file_path=None):
         mono_ratio = mono_pixels / total_pixels
         natural_ratio = natural_tones / total_pixels
         
-        # If very few unique colors and high monochrome ratio (typical code/document/UI screenshot)
         if unique_colors < 650 and mono_ratio > 0.65:
-            return False, True, "Image appears to be a computer screenshot, text document, or UI capture. Please upload a genuine photo of a water body."
+            return {
+                'passed': False,
+                'status': 'fail',
+                'title': 'Photo verification',
+                'message': "This photo does not appear to match the reported water observation. Please upload a relevant water-body photograph.",
+                'reason': "Image appears to be a computer screenshot, text document, or UI capture.",
+                'confidence': 0.92,
+                'detected_subject': "Screenshot / digital document",
+                'is_warning': False
+            }
             
         if mono_ratio > 0.85:
-            return False, True, "Image appears to be a document or screen capture (excessive monochrome content). Please upload a real outdoor photo."
+            return {
+                'passed': False,
+                'status': 'fail',
+                'title': 'Photo verification',
+                'message': "This photo does not appear to match the reported water observation. Please upload a relevant water-body photograph.",
+                'reason': "Image appears to be a document or screen capture (excessive monochrome content).",
+                'confidence': 0.90,
+                'detected_subject': "Document capture",
+                'is_warning': False
+            }
             
         if natural_ratio < 0.20:
-            return False, True, f"Image does not appear to show an outdoor water body (insufficient water or vegetation tones: {int(natural_ratio*100)}%). Please upload a clear photo of the water body."
+            return {
+                'passed': False,
+                'status': 'fail',
+                'title': 'Photo verification',
+                'message': "This photo does not appear to match the reported water observation. Please upload a relevant water-body photograph.",
+                'reason': f"Image lacks natural outdoor water or environmental tones ({int(natural_ratio*100)}% detected).",
+                'confidence': 0.85,
+                'detected_subject': "Non-environmental image",
+                'is_warning': False
+            }
             
-        return True, False, "Hydria validation suggests this image is suitable for a water-body report."
+        return {
+            'passed': True,
+            'status': 'pass',
+            'title': 'Photo verification',
+            'message': "Photo appears relevant to the reported water observation.",
+            'reason': "Photo appears relevant to the reported water observation.",
+            'confidence': 0.85,
+            'detected_subject': "Outdoor water environment",
+            'is_warning': False
+        }
             
     except Exception as e:
-        return True, True, f"Image could not be fully analyzed: {str(e)}"
+        return {
+            'passed': True,
+            'status': 'pass',
+            'title': 'Photo verification',
+            'message': "Photo appears relevant to the reported water observation.",
+            'reason': f"Photo processed with basic verification: {str(e)}",
+            'confidence': 0.70,
+            'detected_subject': "Water observation",
+            'is_warning': True
+        }
+
+def check_photo_suitability(image, file_path=None, water_body_name=None, water_body_type=None, browser_lat=None, browser_lon=None):
+    """
+    Check 3: AI Vision + local heuristic check for photo suitability.
+    Returns: (is_suitable: bool, is_warning: bool, message: str)
+    Maintained for backward compatibility.
+    """
+    res = check_photo_suitability_and_relevance(
+        image,
+        file_path=file_path,
+        water_body_name=water_body_name,
+        water_body_type=water_body_type,
+        browser_lat=browser_lat,
+        browser_lon=browser_lon
+    )
+    return res['passed'], res.get('is_warning', False), res['message']
 
 def extract_exif_gps(image):
     """
@@ -357,13 +524,13 @@ def haversine_distance(lat1, lon1, lat2, lon2):
     c = 2 * math.atan2(math.sqrt(a), math.sqrt(1 - a))
     return r * c
 
-def validate_image_full(file_path, browser_lat, browser_lon, existing_hashes):
+def validate_image_full(file_path, browser_lat, browser_lon, existing_hashes, water_body_name=None, water_body_type=None):
     """
-    Run full Hydria Local Validation Engine pipeline:
+    Run full Hydria Validation Engine pipeline:
     1. File validity
-    2. Perceptual duplicate check
-    3. Suitability heuristic
-    4. EXIF location verification
+    2. Duplicate check (perceptual hash)
+    3. Photo suitability & water body relevance (Gemini Vision + local heuristics)
+    4. Location verification (EXIF coordinates compared against reported location when available)
     
     Returns a structured dictionary with pass/fail states and user-friendly messages.
     """
@@ -377,6 +544,15 @@ def validate_image_full(file_path, browser_lat, browser_lon, existing_hashes):
             'duplicate_msg': "Skipped due to file error.",
             'image_suitability': False,
             'suitability_msg': "Skipped due to file error.",
+            'photo_relevance': {
+                'passed': False,
+                'status': 'fail',
+                'title': 'Photo verification',
+                'message': "This photo does not appear to match the reported water observation. Please upload a relevant water-body photograph.",
+                'reason': file_msg,
+                'confidence': None,
+                'detected_subject': None
+            },
             'location_check': 'unavailable',
             'location_msg': "Skipped due to file error.",
             'image_hash': None,
@@ -385,7 +561,7 @@ def validate_image_full(file_path, browser_lat, browser_lon, existing_hashes):
         
     # Open image for further checks
     with Image.open(file_path) as img:
-        # 2. Hash & Duplicate Check
+        # 2. Duplicate Check
         img_hash = compute_dhash(img)
         is_dup, dup_rep_id = check_duplicate_image(img_hash, existing_hashes)
         if is_dup:
@@ -395,36 +571,54 @@ def validate_image_full(file_path, browser_lat, browser_lon, existing_hashes):
             dup_msg = "Passed: Unique photo confirmed (no duplicates found)."
             duplicate_passed = True
             
-        # 3. Photo Suitability (AI Vision + Local CV)
-        suitable, is_suit_warn, suit_msg = check_photo_suitability(img, file_path=file_path)
+        # 3. Photo Suitability & Water Body Relevance (AI Vision + Local CV)
+        suit_res = check_photo_suitability_and_relevance(
+            img,
+            file_path=file_path,
+            water_body_name=water_body_name,
+            water_body_type=water_body_type,
+            browser_lat=browser_lat,
+            browser_lon=browser_lon
+        )
         
         # 4. EXIF Location Verification
         exif_lat, exif_lon = extract_exif_gps(img)
         if exif_lat is not None and exif_lon is not None and browser_lat is not None and browser_lon is not None:
             dist = haversine_distance(browser_lat, browser_lon, exif_lat, exif_lon)
-            if dist <= 200:
+            if dist <= 300:
                 loc_status = 'pass'
-                loc_msg = f"Photo GPS coordinates match reported location (within ~{int(dist)}m)."
+                loc_msg = f"Photo location verified near reported observation (within ~{int(dist)}m)."
+            elif dist <= 5000:
+                loc_status = 'warning'
+                loc_msg = f"Photo location is approximately {int(dist)}m from the reported location."
             else:
                 loc_status = 'warning'
-                loc_msg = f"Photo EXIF location is approximately {int(dist)}m away from browser location."
+                loc_msg = f"Photo location is approximately {int(dist / 1000)}km from the reported coordinates. Please verify your observation location."
         else:
             loc_status = 'unavailable'
-            loc_msg = "Photo location information is unavailable. Please make sure this is a photo of the water body you are reporting."
+            loc_msg = "Location metadata is not embedded in this photo. Visual environmental verification used."
             
     # Determine overall readiness
-    # Required to pass: file_valid must be True, duplicate_passed must be True, and suitable must not be hard fail.
-    # Note: loc_status 'warning' or 'unavailable' allows submission with a notice as per spec Section 16.
-    ready = valid and duplicate_passed and suitable
+    # Required to pass: file_valid must be True, duplicate_passed must be True, and photo relevance must pass.
+    ready = valid and duplicate_passed and suit_res['passed']
     
     return {
         'file_valid': valid,
         'file_msg': file_msg,
         'duplicate_check': duplicate_passed,
         'duplicate_msg': dup_msg,
-        'image_suitability': suitable,
-        'suitability_warning': is_suit_warn,
-        'suitability_msg': suit_msg,
+        'image_suitability': suit_res['passed'],
+        'suitability_warning': suit_res.get('is_warning', False),
+        'suitability_msg': suit_res['message'],
+        'photo_relevance': {
+            'passed': suit_res['passed'],
+            'status': suit_res['status'],
+            'title': 'Photo verification',
+            'message': suit_res['message'],
+            'reason': suit_res['reason'],
+            'confidence': suit_res.get('confidence'),
+            'detected_subject': suit_res.get('detected_subject')
+        },
         'location_check': loc_status,
         'location_msg': loc_msg,
         'image_hash': img_hash,

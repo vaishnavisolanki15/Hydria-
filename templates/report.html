@@ -37,7 +37,6 @@
         <!-- Draft Auto-Save Restored Notice Banner -->
         <div id="draft-notice" style="display: none; margin-bottom: 1.5rem; background: #f0fdf4; border: 1px solid #86efac; border-left: 4px solid #16a34a; padding: 0.85rem 1.25rem; border-radius: 8px; align-items: center; justify-content: space-between; gap: 1rem;">
             <div style="display: flex; align-items: center; gap: 0.75rem;">
-                <span style="font-size: 1.35rem;">💾</span>
                 <div>
                     <div style="font-weight: 700; color: #166534; font-size: 0.95rem;">Unsaved Draft Restored</div>
                     <div style="font-size: 0.83rem; color: #15803d;">We automatically recovered your in-progress observation details from your previous session.</div>
@@ -59,117 +58,86 @@
                             <span>Step 1 of 3: Location &amp; Observations</span>
                         </h2>
                         <p style="font-size: 0.86rem; color: var(--text-secondary); margin-top: 0.25rem;">
-                            Type any place or lake name to trace it on the live map, click the map to place a pin, or use your GPS.
+                            Enter the water body or location and record your sensory observations.
                         </p>
                     </div>
                 </div>
             </div>
 
-            <!-- Interactive Location Tracer & Map Component -->
+            <!-- Simplified Location Input Component -->
             <div class="loc-picker-container">
-                <div class="loc-picker-header">
-                    <label class="form-label" style="margin-bottom: 0; font-size: 0.92rem; font-weight: 700; color: var(--text-primary); display: flex; align-items: center; gap: 0.4rem;">
-                        <span>📍 Water Body Location</span>
-                        <span class="required">*</span>
+                <div class="form-group" style="margin-bottom: 0.75rem;">
+                    <label for="manual-address-input" class="form-label" style="font-size: 1rem; font-weight: 700; color: var(--text-primary); margin-bottom: 0.25rem;">
+                        Where did you observe this? <span class="required">*</span>
                     </label>
-                    <span id="loc-status-chip" class="loc-status-chip untraced">
-                        <span style="font-size: 0.75rem;">●</span>
-                        <span id="loc-status-text">Location Not Traced</span>
-                    </span>
-                </div>
-
-                <!-- Search Bar with Live Autocomplete -->
-                <div class="loc-search-box-wrapper">
-                    <div class="loc-search-bar">
-                        <div style="position: relative; flex: 1;">
-                            <span class="loc-input-prefix-icon">🔍</span>
-                            <input type="text" id="manual-address-input" class="form-control loc-search-input" 
-                                   placeholder="Type city, neighborhood, lake, river, or address... (e.g. Upper Lake Bhopal, Palasia Indore)" 
-                                   autocomplete="off">
-                            <button type="button" id="loc-clear-btn" class="loc-clear-btn" title="Clear search">✕</button>
-                        </div>
-                        <button type="button" class="btn btn-secondary" id="btn-locate-gps" style="white-space: nowrap; padding: 0.65rem 0.95rem; font-size: 0.88rem; font-weight: 600; display: inline-flex; align-items: center; gap: 0.35rem;" title="Acquire device browser GPS">
-                            <span>🛰️</span>
-                            <span>Use GPS</span>
-                        </button>
-                        <button type="button" class="btn btn-primary" id="search-address-btn" style="white-space: nowrap; padding: 0.65rem 1.15rem; font-size: 0.88rem; font-weight: 600; display: inline-flex; align-items: center; gap: 0.4rem;">
-                            <span>Find &amp; Trace</span>
-                            <span>📍</span>
-                        </button>
+                    <div class="form-hint" style="margin-bottom: 0.75rem;">
+                        Enter the water body or location name (e.g. Bellandur Lake, Bengaluru).
                     </div>
 
-                    <!-- Autocomplete Dropdown List -->
-                    <div id="autocomplete-dropdown" class="loc-autocomplete-dropdown"></div>
-                </div>
-
-                <!-- Search Feedback Alert -->
-                <div id="address-search-feedback" style="display: none; margin-bottom: 0.75rem; font-size: 0.84rem; border-radius: 6px; padding: 0.55rem 0.85rem; transition: all 0.2s ease;"></div>
-
-                <!-- Interactive Leaflet Map -->
-                <div class="loc-map-wrapper">
-                    <div id="location-map"></div>
-                    <div class="map-interaction-hint">
-                        💡 Click anywhere on map or drag pin to trace exact water body spot
-                    </div>
-                </div>
-
-                <!-- Verified Location Banner (Dynamically shown on confirmation) -->
-                <div id="loc-verified-card" class="loc-verified-card">
-                    <div class="loc-verified-info">
-                        <div class="loc-verified-icon">✓</div>
-                        <div>
-                            <div class="loc-verified-title" id="loc-verified-title">
-                                Location Traced &amp; Verified
+                    <!-- Natural Location Search Bar -->
+                    <div class="loc-search-box-wrapper">
+                        <div class="loc-search-bar" style="display: flex; gap: 0.5rem; align-items: center;">
+                            <div style="position: relative; flex: 1;">
+                                <input type="text" id="manual-address-input" class="form-control loc-search-input" 
+                                       placeholder="Enter water body or location" 
+                                       autocomplete="off" value="{{ form_data.water_body_name or '' }}">
+                                <button type="button" id="loc-clear-btn" class="loc-clear-btn" title="Clear search">✕</button>
                             </div>
-                            <div class="loc-verified-coords" id="loc-verified-coords">
-                                <span>Latitude: <strong id="val-lat" class="loc-coord-pill">--</strong></span>
-                                <span>Longitude: <strong id="val-lon" class="loc-coord-pill">--</strong></span>
-                                <span style="color: #166534; font-weight: 600;">✓ Traced on Map</span>
-                            </div>
-                        </div>
-                    </div>
-                    <div style="display: flex; gap: 0.4rem;">
-                        <button type="button" class="btn btn-secondary btn-sm" id="btn-recenter-map" style="padding: 0.3rem 0.65rem; font-size: 0.8rem;">
-                            🎯 Re-center
-                        </button>
-                    </div>
-                </div>
-
-                <!-- Quick Preset Water Bodies -->
-                <div class="popular-water-bodies-row">
-                    <span class="popular-label">Popular Water Bodies:</span>
-                    <button type="button" class="btn-water-pill" onclick="tracePopularPlace('Upper Lake (Bhojtal), Bhopal', 23.2500, 77.3500, 'Lake')">💧 Upper Lake, Bhopal</button>
-                    <button type="button" class="btn-water-pill" onclick="tracePopularPlace('Sirpur Lake, Indore', 22.6950, 75.8180, 'Lake')">💧 Sirpur Lake, Indore</button>
-                    <button type="button" class="btn-water-pill" onclick="tracePopularPlace('Bellandur Lake, Bengaluru', 12.9360, 77.6680, 'Lake')">💧 Bellandur Lake</button>
-                    <button type="button" class="btn-water-pill" onclick="tracePopularPlace('Yamuna River, Delhi', 28.6653, 77.2346, 'River')">💧 Yamuna, Delhi</button>
-                    <button type="button" class="btn-water-pill" onclick="tracePopularPlace('Powai Lake, Mumbai', 19.1264, 72.9050, 'Lake')">💧 Powai Lake, Mumbai</button>
-                    <button type="button" class="btn-water-pill" onclick="tracePopularPlace('Lake Pichola, Udaipur', 24.5760, 73.6800, 'Lake')">💧 Lake Pichola, Udaipur</button>
-                    <button type="button" class="btn-water-pill" onclick="tracePopularPlace('Dal Lake, Srinagar', 34.1167, 74.8667, 'Lake')">💧 Dal Lake, Srinagar</button>
-                    <button type="button" class="btn-water-pill" onclick="tracePopularPlace('Ganga River, Varanasi', 25.3050, 83.0100, 'River')">💧 Ganga, Varanasi</button>
-                </div>
-
-                <!-- Collapsible Direct Numeric Coordinates (For Surveyors / Power Users) -->
-                <div style="border-top: 1px dashed #cbd5e1; padding-top: 0.75rem; margin-top: 0.85rem;">
-                    <button type="button" id="toggle-exact-coords-btn" style="background: none; border: none; padding: 0; color: var(--primary); font-size: 0.82rem; font-weight: 600; cursor: pointer; display: flex; align-items: center; gap: 0.35rem;">
-                        <span>⚙️ Enter custom numeric Latitude &amp; Longitude coordinates</span>
-                        <span id="coords-arrow" style="font-size: 0.7rem;">▼</span>
-                    </button>
-                    <div id="exact-coords-drawer" style="display: none; margin-top: 0.75rem;">
-                        <div class="form-grid-2" style="margin-bottom: 0.6rem;">
-                            <div>
-                                <label class="form-label" style="font-size: 0.8rem;">Latitude (e.g. 22.7196)</label>
-                                <input type="number" step="any" id="manual-lat-input" class="form-control" placeholder="22.7196" value="{{ form_data.latitude or '' }}">
-                            </div>
-                            <div>
-                                <label class="form-label" style="font-size: 0.8rem;">Longitude (e.g. 75.8577)</label>
-                                <input type="number" step="any" id="manual-lon-input" class="form-control" placeholder="75.8577" value="{{ form_data.longitude or '' }}">
-                            </div>
-                        </div>
-                        <div style="text-align: right;">
-                            <button type="button" class="btn btn-secondary btn-sm" id="confirm-manual-coords-btn" style="padding: 0.35rem 0.85rem; font-size: 0.82rem;">
-                                Set Direct Coordinates
+                            <button type="button" class="btn btn-primary" id="search-address-btn" style="white-space: nowrap; padding: 0.65rem 1.25rem; font-weight: 600;">
+                                Locate
+                            </button>
+                            <button type="button" class="btn btn-secondary" id="btn-locate-gps" style="white-space: nowrap; padding: 0.65rem 0.95rem; font-size: 0.88rem; font-weight: 600;" title="Use device location">
+                                Use My Location
                             </button>
                         </div>
+
+                        <!-- Autocomplete Dropdown List -->
+                        <div id="autocomplete-dropdown" class="loc-autocomplete-dropdown"></div>
+                    </div>
+
+                    <!-- Search Feedback Alert -->
+                    <div id="address-search-feedback" style="display: none; margin-top: 0.65rem; font-size: 0.85rem; border-radius: 6px; padding: 0.55rem 0.85rem; transition: all 0.2s ease;"></div>
+
+                    <!-- Location Confirmation Banner -->
+                    <div id="loc-verified-card" class="loc-verified-card" style="display: none; margin-top: 0.75rem;">
+                        <div class="loc-verified-info">
+                            <div class="loc-verified-icon">✓</div>
+                            <div>
+                                <div class="loc-verified-title" id="loc-verified-title">
+                                    Location Confirmed
+                                </div>
+                                <div class="loc-verified-coords" id="loc-verified-coords">
+                                    <span id="loc-confirmed-name" style="font-weight: 600; color: #166534;"></span>
+                                    <span id="val-lat" style="display:none;"></span>
+                                    <span id="val-lon" style="display:none;"></span>
+                                </div>
+                            </div>
+                        </div>
+                        <div style="display: flex; gap: 0.4rem;">
+                            <button type="button" class="btn btn-secondary btn-sm" id="btn-recenter-map" style="padding: 0.3rem 0.65rem; font-size: 0.8rem;">
+                                Center Map
+                            </button>
+                        </div>
+                    </div>
+
+                    <!-- Popular Water Bodies Quick Picks -->
+                    <div class="popular-water-bodies-row" style="margin-top: 0.75rem;">
+                        <span class="popular-label">Examples:</span>
+                        <button type="button" class="btn-water-pill" onclick="tracePopularPlace('Bellandur Lake, Bengaluru', 12.9360, 77.6680, 'Lake')">Bellandur Lake, Bengaluru</button>
+                        <button type="button" class="btn-water-pill" onclick="tracePopularPlace('Upper Lake (Bhojtal), Bhopal', 23.2500, 77.3500, 'Lake')">Upper Lake, Bhopal</button>
+                        <button type="button" class="btn-water-pill" onclick="tracePopularPlace('Sirpur Lake, Indore', 22.6950, 75.8180, 'Lake')">Sirpur Lake, Indore</button>
+                        <button type="button" class="btn-water-pill" onclick="tracePopularPlace('Powai Lake, Mumbai', 19.1264, 72.9050, 'Lake')">Powai Lake, Mumbai</button>
+                        <button type="button" class="btn-water-pill" onclick="tracePopularPlace('Yamuna River, Delhi', 28.6653, 77.2346, 'River')">Yamuna, Delhi</button>
+                        <button type="button" class="btn-water-pill" onclick="tracePopularPlace('Lake Pichola, Udaipur', 24.5760, 73.6800, 'Lake')">Lake Pichola, Udaipur</button>
+                        <button type="button" class="btn-water-pill" onclick="tracePopularPlace('Dal Lake, Srinagar', 34.1167, 74.8667, 'Lake')">Dal Lake, Srinagar</button>
+                    </div>
+                </div>
+
+                <!-- Secondary Simple Map Preview -->
+                <div class="loc-map-wrapper" style="margin-top: 1rem;">
+                    <div id="location-map" style="height: 220px; border-radius: var(--radius-md);"></div>
+                    <div class="map-interaction-hint" style="font-size: 0.8rem; color: var(--text-muted); margin-top: 0.35rem;">
+                        Click on map to adjust pin position if needed
                     </div>
                 </div>
             </div>

@@ -4,7 +4,8 @@ __pycache__/
 *$py.class
 *.db
 
-# Temporary upload files
+# Uploaded report files
+uploads/report_*
 uploads/temp/*
 !uploads/temp/.gitkeep
 

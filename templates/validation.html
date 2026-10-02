@@ -13,11 +13,18 @@
         </p>
     </div>
 
-    <!-- CASE 1: MISSING REQUIRED FIELDS (Section 18) -->
+    <!-- CASE 1: MISSING REQUIRED FIELDS -->
     {% if has_missing %}
         <div class="card" style="border-top: 4px solid var(--warning);">
             <div style="display: flex; align-items: center; gap: 0.75rem; margin-bottom: 1rem;">
-                <span style="font-size: 1.8rem;">📋</span>
+                <div style="width: 36px; height: 36px; border-radius: 50%; background: #fef3c7; color: #b45309; display: flex; align-items: center; justify-content: center; flex-shrink: 0;">
+                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                        <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path>
+                        <polyline points="14 2 14 8 20 8"></polyline>
+                        <line x1="16" y1="13" x2="8" y2="13"></line>
+                        <line x1="16" y1="17" x2="8" y2="17"></line>
+                    </svg>
+                </div>
                 <div>
                     <h2 style="font-size: 1.35rem; font-weight: 700; color: #92400e;">Almost there!</h2>
                     <p style="font-size: 0.9rem; color: var(--text-secondary);">
@@ -60,14 +67,14 @@
                 </div>
             </div>
 
-            <!-- Checklist Items (Section 17) -->
+            <!-- Checklist Items -->
             <div class="checklist">
-                <!-- Check: Location Detected -->
+                <!-- Check: Location Recorded -->
                 <div class="check-item">
                     <span class="check-icon check-pass">✓</span>
                     <div class="check-text">
-                        <div class="check-title">Location detected</div>
-                        <div class="check-desc">Browser coordinates recorded: ({{ form_data.latitude }}, {{ form_data.longitude }})</div>
+                        <div class="check-title">Location recorded</div>
+                        <div class="check-desc">{{ form_data.water_body_name or 'Observation location' }} &bull; ({{ form_data.latitude }}, {{ form_data.longitude }})</div>
                     </div>
                 </div>
 
@@ -98,7 +105,7 @@
                             <div class="check-desc">{{ validation.file_msg }}</div>
                         </div>
                     {% else %}
-                        <span class="check-icon check-fail">✗</span>
+                        <span class="check-icon check-fail">✕</span>
                         <div class="check-text">
                             <div class="check-title">Image file issue</div>
                             <div class="check-desc" style="color: var(--danger);">{{ validation.file_msg }}</div>
@@ -112,10 +119,10 @@
                         <span class="check-icon check-pass">✓</span>
                         <div class="check-text">
                             <div class="check-title">No duplicate image found</div>
-                            <div class="check-desc">Image hash verified as unique in Hydria database</div>
+                            <div class="check-desc">Photo verified as unique in Hydria database</div>
                         </div>
                     {% else %}
-                        <span class="check-icon check-fail">⚠</span>
+                        <span class="check-icon check-fail">✕</span>
                         <div class="check-text">
                             <div class="check-title">Duplicate photo detected</div>
                             <div class="check-desc" style="color: var(--danger);">{{ validation.duplicate_msg }}</div>
@@ -123,30 +130,28 @@
                     {% endif %}
                 </div>
 
-                <!-- Check: Photo Suitability -->
+                <!-- Check: Photo Verification / Relevance (Section 5 & 6) -->
                 <div class="check-item">
-                    {% if validation.image_suitability and not validation.suitability_warning %}
+                    {% if validation.photo_relevance and validation.photo_relevance.passed %}
                         <span class="check-icon check-pass">✓</span>
                         <div class="check-text">
-                            <div class="check-title">Photo appears suitable</div>
-                            <div class="check-desc">{{ validation.suitability_msg }}</div>
-                        </div>
-                    {% elif validation.image_suitability and validation.suitability_warning %}
-                        <span class="check-icon check-warn">⚠</span>
-                        <div class="check-text">
-                            <div class="check-title">Photo suitability notice</div>
-                            <div class="check-desc" style="color: var(--warning);">{{ validation.suitability_msg }}</div>
+                            <div class="check-title">Photo verification</div>
+                            <div class="check-desc" style="color: #166534;">
+                                ✓ Photo appears relevant to the reported water observation.
+                            </div>
                         </div>
                     {% else %}
-                        <span class="check-icon check-fail">✗</span>
+                        <span class="check-icon check-fail">✕</span>
                         <div class="check-text">
-                            <div class="check-title">Photo could not be validated</div>
-                            <div class="check-desc" style="color: var(--danger);">{{ validation.suitability_msg }}</div>
+                            <div class="check-title">Photo verification</div>
+                            <div class="check-desc" style="color: var(--danger);">
+                                ✕ This photo does not appear to match the reported water observation. Please upload a relevant water-body photograph.
+                            </div>
                         </div>
                     {% endif %}
                 </div>
 
-                <!-- Check: Photo EXIF Location (Section 16) -->
+                <!-- Check: Photo Location Metadata -->
                 <div class="check-item">
                     {% if validation.location_check == 'pass' %}
                         <span class="check-icon check-pass">✓</span>
@@ -155,13 +160,13 @@
                             <div class="check-desc">{{ validation.location_msg }}</div>
                         </div>
                     {% elif validation.location_check == 'warning' %}
-                        <span class="check-icon check-warn">⚠</span>
+                        <span class="check-icon check-warn">!</span>
                         <div class="check-text">
-                            <div class="check-title">Photo location warning</div>
+                            <div class="check-title">Photo location notice</div>
                             <div class="check-desc" style="color: var(--warning);">{{ validation.location_msg }}</div>
                         </div>
                     {% else %}
-                        <span class="check-icon" style="color: var(--text-muted);">ℹ</span>
+                        <span class="check-icon" style="color: var(--text-muted); font-size: 0.9rem;">ℹ</span>
                         <div class="check-text">
                             <div class="check-title">Photo location metadata</div>
                             <div class="check-desc" style="color: var(--text-secondary);">{{ validation.location_msg }}</div>
@@ -171,20 +176,21 @@
             </div>
         </div>
 
-        <!-- STRICT PHOTO REJECTION ALERT (NON-WATER / SCREENSHOT) -->
-        {% if not validation.image_suitability %}
+        <!-- STRICT PHOTO REJECTION ALERT (NON-WATER / UNRELATED / SCREENSHOT) -->
+        {% if (validation.photo_relevance and not validation.photo_relevance.passed) or not validation.image_suitability %}
             <div class="alert alert-error" style="flex-direction: column; align-items: stretch; border-left: 5px solid var(--danger); background: #fef2f2; margin-bottom: 1.5rem;">
                 <div style="display: flex; align-items: center; gap: 0.6rem; font-weight: 800; font-size: 1.05rem; color: #991b1b;">
-                    <span>🚫</span> PHOTO REJECTED BY AI VISION
+                    <span style="display: inline-flex; width: 22px; height: 22px; border-radius: 50%; background: #fee2e2; color: #991b1b; align-items: center; justify-content: center; font-size: 0.85rem; font-weight: 900;">✕</span>
+                    <span>PHOTO REJECTED: NOT A WATER OBSERVATION</span>
                 </div>
                 <p style="font-size: 0.92rem; color: #7f1d1d; margin: 0.4rem 0 0.75rem; line-height: 1.5;">
-                    {{ validation.suitability_msg }}
+                    {{ (validation.photo_relevance and validation.photo_relevance.message) or validation.suitability_msg }}
                     <br>
-                    <strong>Policy:</strong> Hydria only accepts real photographs of outdoor water bodies (such as ponds, lakes, rivers, streams, canals, or wetlands). Screenshots, documents, digital graphics, memes, and non-water pictures are strictly blocked.
+                    <strong>Policy:</strong> Hydria only accepts real photographs of outdoor water bodies (such as ponds, lakes, rivers, streams, canals, or wetlands). Unrelated photographs including selfies, portraits, indoor rooms, buildings, vehicles, screenshots, and non-water subjects are strictly rejected.
                 </p>
                 <div>
                     <a href="javascript:history.back()" class="btn btn-secondary btn-sm" style="font-weight: 600;">
-                        &larr; Upload a Genuine Water Photo
+                        &larr; Upload a Relevant Water Photo
                     </a>
                 </div>
             </div>
@@ -194,7 +200,8 @@
         {% if duplicate_photo_found %}
             <div class="alert alert-error" style="flex-direction: column; align-items: stretch; border-left: 5px solid var(--danger); background: #fef2f2; margin-bottom: 1.5rem;">
                 <div style="display: flex; align-items: center; gap: 0.6rem; font-weight: 800; font-size: 1.05rem; color: #991b1b;">
-                    <span>🚫</span> DUPLICATE PHOTO NOT ALLOWED
+                    <span style="display: inline-flex; width: 22px; height: 22px; border-radius: 50%; background: #fee2e2; color: #991b1b; align-items: center; justify-content: center; font-size: 0.85rem; font-weight: 900;">✕</span>
+                    <span>DUPLICATE PHOTO NOT ALLOWED</span>
                 </div>
                 <p style="font-size: 0.92rem; color: #7f1d1d; margin: 0.4rem 0 0.75rem; line-height: 1.5;">
                     {{ validation.duplicate_msg }}
@@ -213,7 +220,8 @@
         {% if duplicate_report_found and nearby_reports %}
             <div class="alert alert-error" style="flex-direction: column; align-items: stretch; border-left: 5px solid var(--danger); background: #fef2f2; margin-bottom: 1.5rem;">
                 <div style="display: flex; align-items: center; gap: 0.6rem; font-weight: 800; font-size: 1.05rem; color: #991b1b;">
-                    <span>🚫</span> DUPLICATE REPORT NOT ALLOWED
+                    <span style="display: inline-flex; width: 22px; height: 22px; border-radius: 50%; background: #fee2e2; color: #991b1b; align-items: center; justify-content: center; font-size: 0.85rem; font-weight: 900;">✕</span>
+                    <span>DUPLICATE REPORT NOT ALLOWED</span>
                 </div>
                 <p style="font-size: 0.92rem; color: #7f1d1d; margin: 0.4rem 0 0.75rem; line-height: 1.5;">
                     A report for <strong>{{ nearby_reports[0].water_body_name }}</strong> was already submitted today (Report #{{ nearby_reports[0].id }} &bull; {{ nearby_reports[0].distance_meters }}m away).
@@ -234,7 +242,11 @@
         <!-- FINAL SUBMIT OR FIX ACTIONS -->
         {% if ready_to_submit %}
             <div class="card" style="text-align: center; background: #f0fdf4; border-color: #86efac; padding: 2rem;">
-                <div style="font-size: 2.2rem; margin-bottom: 0.35rem;">✨</div>
+                <div style="width: 48px; height: 48px; border-radius: 50%; background: #dcfce7; color: #16a34a; display: flex; align-items: center; justify-content: center; margin: 0 auto 0.75rem;">
+                    <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+                        <polyline points="20 6 9 17 4 12"></polyline>
+                    </svg>
+                </div>
                 <h3 style="font-size: 1.3rem; font-weight: 700; color: #166534; margin-bottom: 0.35rem;">
                     Your report looks ready!
                 </h3>
@@ -261,8 +273,19 @@
         {% else %}
             <!-- Problems / Duplicate Found Screen -->
             <div class="card" style="text-align: center; background: #fffbeb; border-color: #fde68a; padding: 2rem;">
-                <div style="font-size: 2.2rem; margin-bottom: 0.5rem;">
-                    {% if duplicate_photo_found or duplicate_report_found %}🚫{% else %}⚠{% endif %}
+                <div style="width: 48px; height: 48px; border-radius: 50%; background: #fee2e2; color: #b91c1c; display: flex; align-items: center; justify-content: center; margin: 0 auto 0.75rem;">
+                    {% if duplicate_photo_found or duplicate_report_found %}
+                        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+                            <circle cx="12" cy="12" r="10"></circle>
+                            <line x1="4.93" y1="4.93" x2="19.07" y2="19.07"></line>
+                        </svg>
+                    {% else %}
+                        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                            <path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"></path>
+                            <line x1="12" y1="9" x2="12" y2="13"></line>
+                            <line x1="12" y1="17" x2="12.01" y2="17"></line>
+                        </svg>
+                    {% endif %}
                 </div>
                 <h3 style="font-size: 1.3rem; font-weight: 700; color: #92400e; margin-bottom: 0.35rem;">
                     {% if duplicate_photo_found or duplicate_report_found %}

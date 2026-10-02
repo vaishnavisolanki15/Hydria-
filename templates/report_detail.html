@@ -291,11 +291,11 @@
                     </h3>
                     {% if insight.is_ai %}
                         <span class="badge" style="background: linear-gradient(135deg, #1e3a8a, #0284c7); color: #ffffff; font-weight: 700; font-size: 0.78rem; padding: 0.25rem 0.65rem; border-radius: 9999px; box-shadow: 0 2px 8px rgba(2, 132, 199, 0.35);">
-                            ✨ Powered by Gemini AI
+                            Powered by Gemini AI
                         </span>
                     {% else %}
                         <span class="badge" style="background: var(--bg-card-subtle); color: var(--text-secondary); border: 1px solid var(--border-color); font-size: 0.75rem;">
-                            ⚙️ Rule Engine Baseline
+                            Rule Engine Baseline
                         </span>
                     {% endif %}
                 </div>
@@ -309,7 +309,12 @@
             {% if current_user %}
                 <form action="{{ url_for('reanalyze_report', report_id=report.id) }}" method="POST" style="margin: 0;">
                     <button type="submit" class="btn btn-secondary btn-sm" title="Re-run Gemini AI Analysis with latest prompt and data" style="font-size: 0.8rem; display: flex; align-items: center; gap: 0.35rem;">
-                        <span>🔄 Re-analyze with Gemini</span>
+                        <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                            <polyline points="23 4 23 10 17 10"></polyline>
+                            <polyline points="1 20 1 14 7 14"></polyline>
+                            <path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15"></path>
+                        </svg>
+                        <span>Re-analyze with Gemini</span>
                     </button>
                 </form>
             {% endif %}
@@ -351,7 +356,10 @@
         {% if insight.root_causes %}
             <div style="background: #ffffff; border: 1px solid var(--border-color); border-radius: var(--radius-md); padding: 1.25rem; box-shadow: var(--shadow-sm);">
                 <div style="display: flex; align-items: center; gap: 0.45rem; font-weight: 700; color: #1e3a8a; font-size: 0.95rem; margin-bottom: 0.75rem;">
-                    <span>🔬</span>
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                        <circle cx="11" cy="11" r="8"></circle>
+                        <line x1="21" y1="21" x2="16.65" y2="16.65"></line>
+                    </svg>
                     <span>Probable Ecological Root Causes</span>
                 </div>
                 <ul style="list-style: none; padding: 0; margin: 0;">
@@ -368,7 +376,9 @@
         <!-- Public Health Advisory -->
         <div style="background: #ffffff; border: 1px solid var(--border-color); border-radius: var(--radius-md); padding: 1.25rem; box-shadow: var(--shadow-sm);">
             <div style="display: flex; align-items: center; gap: 0.45rem; font-weight: 700; color: #9a3412; font-size: 0.95rem; margin-bottom: 0.75rem;">
-                <span>🛡️</span>
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                    <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/>
+                </svg>
                 <span>Community & Health Guidance</span>
             </div>
             <p style="font-size: 0.88rem; color: var(--text-primary); line-height: 1.55; margin: 0;">
@@ -381,7 +391,15 @@
     {% if insight.civic_action_steps %}
         <div style="background: #f8fafc; border: 1px solid #cbd5e1; border-radius: var(--radius-md); padding: 1.25rem; margin-bottom: 1.5rem;">
             <div style="display: flex; align-items: center; gap: 0.45rem; font-weight: 700; color: #0f172a; font-size: 0.95rem; margin-bottom: 0.75rem;">
-                <span>🏛️</span>
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                    <line x1="4" y1="2" x2="20" y2="2"></line>
+                    <line x1="2" y1="7" x2="22" y2="7"></line>
+                    <line x1="4" y1="22" x2="20" y2="22"></line>
+                    <line x1="6" y1="7" x2="6" y2="22"></line>
+                    <line x1="10" y1="7" x2="10" y2="22"></line>
+                    <line x1="14" y1="7" x2="14" y2="22"></line>
+                    <line x1="18" y1="7" x2="18" y2="22"></line>
+                </svg>
                 <span>Recommended Civic & Remediation Actions</span>
             </div>
             <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 0.65rem;">

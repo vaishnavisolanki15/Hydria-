@@ -402,12 +402,12 @@ def seed_database(force_reseed=False):
     ]
 
     photo_map = {
-        "Bellandur Lake": "real_bellandur_lake.jpg",
+        "Bellandur Lake": "photo_sunset_wetland.jpg",
         "Mithi River (CST Road)": "real_mithi_river.jpg",
         "Najafgarh Industrial Drain": "real_bali_polluted_river.jpg",
         "Yamuna River (Nigambodh Ghat)": "real_yamuna_delhi.jpg",
         "Yamuna River (Kalindi Kunj)": "photo_riverside_canal.jpg",
-        "Kshipra River (Ram Ghat)": "photo_river_ghat.jpg",
+        "Kshipra River (Ram Ghat)": "photo_willow_stream.jpg",
         "East Industrial River Bend": "photo_reservoir_algae.jpg",
         "Bilawali Lake Shore": "photo_green_lake.jpg",
         "Mahalakshmi Pond": "photo_lily_pond.jpg",

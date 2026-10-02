@@ -1,84 +1,156 @@
 <p align="center">
-  <img src="static/images/hydria-brand.png" alt="Hydria Banner" width="700" style="border-radius: 12px; box-shadow: 0 8px 30px rgba(0,0,0,0.12);" />
+  <img src="static/images/hydria-brand.png" alt="Hydria Logo" width="460" />
 </p>
 
-<h1 align="center">💧 Hydria</h1>
+<h1 align="center">Hydria</h1>
 
 <p align="center">
-  <strong>From Citizen Observations to Actionable Water Quality Insights.</strong><br>
-  <em>Empowering communities to monitor, verify, and protect local freshwater bodies together.</em>
+  <strong>Observe.Report.Protect</strong><br>
+  <em>Citizen Science Freshwater Monitoring and Ecological Intelligence Platform</em>
 </p>
 
 <p align="center">
-  <img src="https://img.shields.io/badge/Python-3.10%2B-blue?logo=python&logoColor=white" alt="Python 3.10+" />
-  <img src="https://img.shields.io/badge/Framework-Flask%203.0-green?logo=flask&logoColor=white" alt="Flask 3.0" />
-  <img src="https://img.shields.io/badge/Database-MySQL%208.0-00758F?logo=mysql&logoColor=white" alt="MySQL 8.0" />
-  <img src="https://img.shields.io/badge/AI-Google%20Gemini%202.5-4285F4?logo=google-gemini&logoColor=white" alt="Google Gemini" />
+  <img src="https://img.shields.io/badge/Python-3.10%2B-blue" alt="Python 3.10+" />
+  <img src="https://img.shields.io/badge/Framework-Flask%203.0-green" alt="Flask 3.0" />
+  <img src="https://img.shields.io/badge/Database-MySQL%208.0-00758F" alt="MySQL 8.0" />
+  <img src="https://img.shields.io/badge/AI-Google%20Gemini-4285F4" alt="Google Gemini" />
   <img src="https://img.shields.io/badge/License-MIT-lightgrey" alt="License" />
 </p>
 
 ---
 
-## 🌊 Why Hydria?
+## Overview
 
-Every day, people walk past neighborhood lakes, streams, and urban canals. We notice when a favorite pond turns murky green with an algal bloom, when a river smells like untreated sewage, or when plastic waste clogs a canal outlet.
+Freshwater ecosystems in urban and peri-urban areas face increasing ecological pressure from industrial discharge, untreated sewage, solid waste accumulation, and invasive algal blooms. While citizens frequently observe these environmental changes firsthand, traditional reporting systems are often inaccessible, slow, and overly bureaucratic.
 
-Yet, most official pollution reporting tools are slow, intimidating, and demand complex lab terminology like *"Biochemical Oxygen Demand (BOD)"* or *"Chemical Oxygen Demand (COD)"*. When citizens do submit reports, they rarely get any immediate feedback, leaving communities feeling disconnected and powerless.
-
-**Hydria was built to change that.**
-
-We believe citizen science should be **accessible to everyone**. Hydria bridges everyday sensory observations—what you see, smell, and photograph—with transparent environmental intelligence. Anyone with a smartphone or laptop can log an observation in under 60 seconds and receive instant, meaningful insights on water health and community safety recommendations.
+Hydria is a modern citizen science platform designed to transform qualitative, on-the-ground human observations into structured, verified environmental intelligence. By pairing simple sensory observations with automated image validation, geographic resolution, and Google Gemini AI, Hydria enables anyone to document water quality in under 60 seconds and receive instant, science-backed ecological assessments.
 
 ---
 
-## ✨ What Makes Hydria Special?
+## How Hydria Is Different from Other Solutions
 
-### 📍 1. Effortless, 1-Minute Reporting
-* **Automatic Geolocation:** Uses your browser’s location (`navigator.geolocation`) to pinpoint coordinates instantly—no typing long street addresses.
-* **Sensory Observation Flow:** Describe the water in plain language using guided choices: water color, odor, algae density, floating waste, and wildlife signs.
-* **Instant Photo Preview:** Live client-side image preview before you submit.
+Most environmental reporting tools fall into one of two extremes: complex institutional databases inaccessible to ordinary citizens, or generic complaint ticketing systems that lack environmental intelligence. Hydria was built from the ground up to solve these fundamental limitations.
 
-### 🛡️ 2. Strict Duplicate Prevention & Quality Verification (`image_validator.py`)
-Hydria strictly prohibits and prevents duplicate photo uploads or duplicate daily reports to maintain clean, credible community records:
-* **Strict Duplicate Photo Blocking (dHash):** Computes a 64-bit difference hash with Hamming distance matching (threshold ≤ 6). Re-submitting the same image or a visually near-identical photo is strictly rejected.
-* **Strict Duplicate Report Blocking:** If an observation for the same water body name or coordinates within ~300m has already been logged today, submission is strictly blocked to prevent redundant spam.
-* **Palette & Luminance Screening:** Checks natural outdoor color distribution and flags blank, dark, or irrelevant uploads (like selfies or indoor photos).
-* **EXIF Geolocation Cross-Check:** Extracts embedded photo GPS metadata to verify that the photo was taken at the reported location (within ~200 meters).
+| Feature / Capability | Traditional Government Portals | Generic Civic Complaint Apps | Hydria Citizen Platform |
+| :--- | :--- | :--- | :--- |
+| **Observation Language** | Requires technical lab parameters (BOD, COD, pH, turbidity meters) | Freeform text description without environmental structure | Standardized sensory metrics (water color, odor, waste level, algae, wildlife impact) |
+| **Location Entry** | Complex manual GPS coordinates or tedious administrative drop-downs | Device GPS only, often failing indoors or without signal | Natural water body search (e.g., "Bellandur Lake, Bengaluru") with automatic geocoding and optional GPS |
+| **Photo Verification** | None; unverified file attachment | Basic upload without content checking | Multi-stage verification: duplicate hash blocking (dHash), AI water relevance (Gemini Vision), and EXIF distance checks |
+| **Immediate Feedback** | No feedback; report enters weeks-long bureaucratic queue | Generic acknowledgment ticket number ("Report #12345 received") | Instant AI ecological diagnostic, concern level scoring, root cause analysis, and public health guidance |
+| **Data Integrity & Anti-Spam** | Manual screening by administrative staff | High rate of duplicate reports, selfies, screenshots, and unrelated photos | Algorithmic duplicate photo rejection, daily same-location report clustering, and non-water image blocking |
+| **Community Engagement** | Closed silo; reports invisible to the public | Basic public view without verification status | Community corroboration ("I Observed This Too") with unique voter validation and public analysis board |
+| **Offline Resilience** | Unavailable without high-bandwidth connection | Fails completely when remote APIs are unreachable | Deterministic local rule engine and curated offline geocoding fallback when cloud AI is unavailable |
 
-### 🧠 3. Google Gemini AI Analysis Engine (`analysis_engine.py`)
-Hydria converts qualitative field notes and visual evidence into environmental evaluations powered by **Google Gemini 2.5 Flash**:
-* **Limnological Diagnosis:** Gemini processes qualitative sensory cues (water color, smell, algae, dead fish, waste level) and optionally analyzes the photo evidence directly.
-* **Concern Level & Scoring:** Provides an ecological concern level (**Low**, **Moderate**, or **High Concern**) and concern score (0–100).
-* **Probable Root Causes:** Pinpoints environmental drivers such as cyanobacteria eutrophication, untreated domestic wastewater discharge, or seasonal storm runoff.
-* **Health Advisory & Civic Action:** Outlines immediate human health precautions (e.g. skin contact, fishing safety) and a 3-step community/municipal remediation plan.
-* **Intelligent Caching & Fallback:** AI reports are stored in MySQL (`ai_analysis`) for high-speed page loads, with a deterministic local ecological rule engine fallback.
+### Key Differentiators
 
-### 🤝 4. Community Corroboration ("I Observed This Too")
-* Reports aren't just static records; they're living community sightings.
-* Neighbors can corroborate observations by clicking **"👍 I observed this too"**.
-* Built-in safeguards ensure one vote per user per report, building credible consensus for local authorities and conservation groups.
-
-### 📊 5. Visual Analysis Board
-* A clean Kanban-style workflow board tracking each issue through three stages: **Not Watched**, **In Process**, and **Submitted**.
-* Helps civic groups and community volunteers coordinate action and follow cleanup efforts from start to finish.
-
-### 🗄️ 6. Robust MySQL Database Backend
-* Backed by **MySQL 8.0+** with relational integrity, foreign key cascades, unique vote constraints, and full UTF-8 (`utf8mb4`) support.
-* Persistent community records across `users`, `reports`, `votes`, and `validations`.
+1. **Zero-Jargon Citizen Science**: Eliminates technical barriers by translating human senses—visual color palettes, odors, surface appearance, and wildlife presence—into limnologically meaningful data points.
+2. **Intelligent Image Relevance**: Unlike systems that accept any image attachment, Hydria validates that uploaded photographs genuinely depict the reported water body, rejecting selfies, screenshots, vehicle photos, and indoor images before submission.
+3. **Strict Duplicate Prevention**: Protects community data integrity using 64-bit difference hashing (dHash) and geographical daily report clustering, preventing ballot stuffing and duplicate submissions.
+4. **Immediate Ecological Guidance**: Instead of leaving contributors in the dark, Hydria generates an instant diagnostic report outlining estimated concern levels, probable environmental root causes, community health advisories, and civic remediation steps.
+5. **Consensus-Driven Corroboration**: Allows neighboring residents to independently corroborate active reports, building credible civic consensus for local conservationists, researchers, and municipal authorities.
 
 ---
 
-## 🚀 Getting Started
+## Important and Unique Features
 
-Follow these steps to run Hydria locally:
+### 1. Simplified Natural Location Discovery
+- **Natural Language Search**: Users can type water body names or addresses (e.g., "Bellandur Lake, Bengaluru" or "Yamuna River, Delhi").
+- **Automatic Geocoding**: Resolves natural names into precise latitude and longitude via integrated geocoding endpoints with an instant offline lookup dictionary for major freshwater bodies.
+- **Secondary Map Confirmation**: An interactive Leaflet map pin updates dynamically without requiring users to navigate complex coordinate drawers or understand GPS terminology.
+- **Privacy-First Location**: Never forces automatic browser GPS permission popups; GPS detection is only triggered if explicitly chosen by the user.
+
+### 2. Multi-Stage Image Validation Pipeline (`image_validator.py`)
+- **File Integrity & Quality Check**: Verifies file format (JPG, PNG, WEBP), checks file size under 5 MB, and confirms dimensions and readable image data.
+- **Duplicate Image Detection (dHash)**: Computes a 64-bit difference hash and evaluates Hamming distance. Submitting previously submitted or visually duplicate photos is strictly blocked.
+- **AI Visual Water Body Relevance (Google Gemini Vision)**: Evaluates the uploaded photograph in context of the reported water body name, type, and location. Rejects non-environmental images including portraits, indoor spaces, vehicles, computer screenshots, and documents.
+- **Local Computer Vision Fallback**: When running offline or in testing mode, local heuristics evaluate standard deviation, luminance extremes, center-region skin ratio, and natural tone distribution (blues, greens, earth tones).
+- **EXIF Location Verification**: Extracts embedded photo GPS metadata when available and compares distance against the reported location, providing a user notice if coordinates differ significantly without falsely rejecting legitimate photos lacking EXIF tags.
+- **Transparent Human-Readable UX**: Displays clear pass/fail status without technical jargon (e.g., "Photo appears relevant to the reported water observation.").
+
+### 3. Environmental Intelligence Engine (`analysis_engine.py`)
+- **AI Limnological Diagnostic**: Processes qualitative sensory data and photographic evidence through Google Gemini to assess freshwater health.
+- **Ecological Concern Scoring**: Assigns a concern category (Low, Moderate, or High Concern) alongside an objective numerical score (0 to 10).
+- **Probable Root Cause Identification**: Detects underlying ecological stressors such as industrial effluent discharge, cyanobacteria eutrophication, or untreated domestic sewage.
+- **Public Health & Civic Action Steps**: Provides immediate safety advisories regarding skin contact and fishing, paired with structured civic remediation recommendations.
+- **Local Rule Engine Fallback**: Automatically provides consistent baseline ecological analysis if external AI services are unreachable.
+
+### 4. Community Corroboration Engine
+- **Independent Confirmation**: Community members can confirm active reports by clicking "I Observed This Too".
+- **Unique Voter Enforcement**: Relational database constraints enforce one vote per user per report, preventing duplicate vote manipulation.
+- **Real-Time Verification Counters**: Displays verified confirmation counts across dashboard, community feeds, and detailed report views.
+
+### 5. Surveillance and Analysis Board (`/analysis-board`)
+- **Risk-Stratified Layout**: Organizes water quality reports into clear severity sections: High Concern, Moderate Concern, and Low Concern.
+- **Live Search & Filtering**: Filters reports dynamically by water body name, odor, appearance, or workflow status.
+- **Status Lifecycle Tracking**: Tracks reports across operational stages: Not Watched, In Process, and Submitted.
+
+---
+
+## Technical Architecture
+
+```text
+Hydria/
+|-- app.py                 # Core Flask application, routing, session management, geocoding
+|-- database.py            # MySQL database connection manager and transactional queries
+|-- image_validator.py     # Image validation, dHash duplicate detection, Gemini Vision relevance
+|-- analysis_engine.py     # Gemini AI limnological diagnostic engine and rule engine fallback
+|-- seed_demo.py           # Demo dataset seeder with realistic freshwater observations
+|-- test_app.py            # Automated test suite (9 comprehensive test cases)
+|-- schema.sql             # Relational schema reference (InnoDB, utf8mb4)
+|-- requirements.txt       # Python dependencies
+|-- .env                   # Configuration file (database credentials, Gemini API key)
+|
+|-- templates/             # Jinja2 HTML templates
+|   |-- base.html          # Global layout, navigation, brand logo, and footer
+|   |-- login.html         # User authentication
+|   |-- register.html      # Contributor registration
+|   |-- dashboard.html     # User dashboard with personal observation history
+|   |-- report.html        # Simplified report creation form
+|   |-- validation.html    # Pre-submission verification checklist
+|   |-- submit_success.html# Submission confirmation screen
+|   |-- community.html     # Public community observation feed
+|   |-- analysis_board.html# Surveillance board with status and risk filters
+|   |-- report_detail.html # Comprehensive report view with diagnostic insights
+|   |-- error.html         # User-friendly error fallback
+|
+|-- static/                # Static frontend assets
+|   |-- css/
+|   |   |-- style.css      # Aquatic design system and responsive styles
+|   |   |-- leaflet.css    # Map styling
+|   |-- js/
+|   |   |-- location.js    # Location search, geocode suggestions, and preview
+|   |   |-- leaflet.js     # Map rendering engine
+|   |-- images/
+|       |-- hydria-brand.png # Official Hydria logo and brand artwork
+|
+|-- uploads/               # Verified report photographs
+    |-- temp/              # Temporary scratchpad for pre-submission checks
+```
+
+---
+
+## Technology Stack
+
+- **Backend**: Python 3.10+, Flask 3.0, PyMySQL, Pillow (PIL), python-dotenv
+- **Frontend**: Semantic HTML5, Vanilla CSS (Aquatic Design System), Vanilla JavaScript
+- **Mapping**: Leaflet.js with OpenStreetMap and Photon geocoding integration
+- **Artificial Intelligence**: Google Gemini (gemini-2.5-flash / gemini-flash-latest via `google-genai` SDK)
+- **Database**: MySQL 8.0+ (InnoDB, UTF-8 mb4, Foreign Key Constraints)
+
+---
+
+## Getting Started
 
 ### Prerequisites
-* **Python 3.10+**
-* **MySQL 8.0+** running locally (e.g., via MySQL Server service on port 3306).
-* **Google Gemini API Key** (configured in `.env`).
 
-### 1. Configure Environment (`.env`)
-Create or edit the `.env` file in the project root:
+- Python 3.10 or higher
+- MySQL Server 8.0 or higher running locally (port 3306)
+- Google Gemini API key
+
+### 1. Clone and Configure Environment
+
+Create or update the `.env` file in the project root directory:
+
 ```ini
 MYSQL_HOST=localhost
 MYSQL_PORT=3306
@@ -86,119 +158,66 @@ MYSQL_USER=root
 MYSQL_PASSWORD=your_mysql_password
 MYSQL_DB=hydria_db
 GEMINI_API_KEY=your_gemini_api_key
-SECRET_KEY=hydria_super_secret_session_key_2026
+SECRET_KEY=hydria_citizen_freshwater_secret_key_2026
 ```
 
 ### 2. Install Dependencies
+
 ```bash
 pip install -r requirements.txt
 ```
-> Installs **Flask**, **PyMySQL**, **Pillow**, **python-dotenv**, and **google-genai**.
 
-### 3. Launch the Server
+### 3. Run the Application
+
 ```bash
 python app.py
 ```
 
-When you start the app for the first time, Hydria will automatically:
-* Connect to MySQL and automatically create the `hydria_db` database and tables if they don't exist.
-* Seed a rich demo dataset featuring **14 realistic freshwater reports** across India (from Bellandur Lake and the Yamuna River to Dal Lake and Pangong Tso).
+On initial startup, Hydria will automatically:
+- Connect to MySQL and initialize database tables if they do not exist.
+- Seed a curated demo dataset with realistic freshwater observations across India.
 
-### 4. Open in Your Browser
-Open your browser and visit:
+Open your browser and navigate to:
 ```text
 http://127.0.0.1:5000
 ```
 
 ---
 
-## 👤 Quick Login & Accounts
+## Demo Accounts
 
-You can write **any email address** and log in directly with password `password123`.
+Pre-configured accounts for testing and evaluation (all use the default password `password123`):
 
-Pre-configured contributor accounts:
+| Contributor Name | Email Address | Role |
+| :--- | :--- | :--- |
+| **Vaishnavi Sharma** | `vaishnavi@example.com` | Lead Observer |
+| **Arjun Patel** | `arjun@example.com` | Citizen Scientist |
+| **Priya Nair** | `priya@example.com` | Water Monitor |
 
-| Name | Email | Password | Role |
-| :--- | :--- | :--- | :--- |
-| **Vaishnavi Sharma** | `vaishnavi@example.com` | `password123` | Lead Observer |
-| **Arjun Patel** | `arjun@example.com` | `password123` | Citizen Scientist |
-| **Priya Nair** | `priya@example.com` | `password123` | Water Monitor |
-
-> **Tip:** The password is **`password123`** for all accounts. If you enter a new email, Hydria will automatically provision your profile on login!
+You can also register a new account instantly via the registration page.
 
 ---
 
-## 🧪 Testing the Application
+## Automated Testing
 
-Hydria comes with an automated test suite covering authentication, report validation, image duplicate detection, and community voting:
+Hydria includes an automated test suite verifying authentication, report validation, duplicate photo blocking, duplicate report prevention, location handling, and voting integrity:
 
 ```bash
 python -m unittest test_app.py
 ```
 
-All tests execute locally in under a second.
+All 9 test suites execute locally and validate end-to-end functionality.
 
 ---
 
-## 📁 Project Architecture
+## Brand and Identity
 
-```text
-Hydria Project/
-│
-├── app.py                 # Core Flask application, routing & session handling
-├── database.py            # MySQL database manager & transaction queries (PyMySQL)
-├── analysis_engine.py     # Gemini 2.5 Flash AI & ecological insight engine
-├── image_validator.py     # Image validator & strict duplicate detector (dHash, EXIF)
-├── seed_demo.py           # Demo dataset seeder (14 realistic urban water records)
-├── test_app.py            # Automated test suite (MySQL + Gemini + strict duplicate checks)
-├── requirements.txt       # Python package dependencies
-├── schema.sql             # MySQL 8.0+ schema reference (InnoDB, utf8mb4)
-├── .env                   # MySQL credentials & Gemini API key configuration
-│
-├── templates/             # Semantic HTML5 Jinja templates
-│   ├── base.html          # Shared layout, navigation & aquatic design tokens
-│   ├── login.html         # User sign-in
-│   ├── register.html      # New contributor registration
-│   ├── dashboard.html     # Contributor dashboard & "My Reports"
-│   ├── report.html        # Guided 3-step water observation form
-│   ├── validation.html    # Pre-submission automated report check
-│   ├── submit_success.html# Submission confirmation
-│   ├── community.html     # Public feed of all community water observations
-│   ├── analysis_board.html# 3-column Kanban workflow board
-│   ├── report_detail.html # Full report page with ecological diagnostics
-│   ├── error.html         # Friendly error fallback page
-│   └── partials/
-│       └── board_card.html# Reusable card component for analysis board
-│
-├── static/                # Static assets & scripts
-│   ├── css/
-│   │   └── style.css      # Custom aquatic design system & responsive styling
-│   ├── js/
-│   │   └── location.js    # Browser GPS detection, photo preview, & AJAX voting
-│   ├── images/            # Brand icons, logo, and fallback graphics
-│   └── favicon.ico        # Browser favicon
-│
-└── uploads/               # Verified observation photos
-    └── temp/              # Temporary scratchpad for pre-submission checks
-```
+- **Official Brand Mark**: `static/images/hydria-brand.png`
+- **Official Tagline**: `Observe.Report.Protect`
+- **Design Philosophy**: Clean civic-science appearance with an aquatic teal and deep blue color palette, responsive components, and transparent user-facing feedback.
 
 ---
 
-## 🧭 Step-by-Step User Journey
+## License
 
-1. **Sign In or Register:** Create an account in seconds at `/register`.
-2. **Start a Report:** Click **+ Report Water Body** in the top navigation bar.
-3. **Capture Coordinates:** Click **Detect Location** to grab your device's GPS coordinates.
-4. **Log Sensory Cues:** Select the water body type, color, smell, visible waste, and algae level.
-5. **Attach Evidence:** Select an image from your device and preview it in real time.
-6. **Run Verification:** Click **Check & Verify Report** to see Hydria’s on-device checklist review the submission.
-7. **Submit & Review:** Confirm your report. View your diagnosis under **Hydria Insights**.
-8. **Explore Community & Board:** Browse other reports on `/community` or follow status updates on `/analysis-board`. Corroborate fellow citizens' sightings with **👍 I observed this too**.
-
----
-
-## 💡 Contributing & Feedback
-
-Hydria was built with love for our waterways. Whether you want to improve diagnostic rules, refine the design system, or suggest new observation metrics, contributions and ideas are always welcome!
-
-💧 *Because healthy water means healthy communities.*
+This project is licensed under the MIT License. See the LICENSE file for details.

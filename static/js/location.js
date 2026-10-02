@@ -145,11 +145,18 @@ function initGeolocation() {
         }
 
         // Update verified confirmation card
-        if (verifiedCard && verifiedTitle && valLat && valLon) {
+        if (verifiedCard) {
             verifiedCard.style.display = 'flex';
-            verifiedTitle.textContent = displayName || `Traced Water Body (${numLat.toFixed(4)}°, ${numLon.toFixed(4)}°)`;
-            valLat.textContent = `${formattedLat}° N`;
-            valLon.textContent = `${formattedLon}° E`;
+            const placeLabel = displayName || rawName || `Location (${numLat.toFixed(4)}°, ${numLon.toFixed(4)}°)`;
+            const confirmedName = document.getElementById('loc-confirmed-name');
+            if (confirmedName) {
+                confirmedName.textContent = placeLabel;
+            }
+            if (verifiedTitle) {
+                verifiedTitle.textContent = "Location Confirmed";
+            }
+            if (valLat) valLat.textContent = `${formattedLat}° N`;
+            if (valLon) valLon.textContent = `${formattedLon}° E`;
         }
 
         // Hide feedback alert if previously shown
@@ -309,12 +316,10 @@ function initGeolocation() {
             row.className = 'loc-autocomplete-item';
             row.dataset.index = index;
 
-            const icon = item.is_water ? '🌊' : '📍';
             const badgeText = item.is_water ? 'Water Body' : 'Place';
 
             row.innerHTML = `
-                <span class="loc-item-icon">${icon}</span>
-                <div class="loc-item-text">
+                <div class="loc-item-text" style="flex: 1;">
                     <div class="loc-item-title">${escapeHtml(item.name || item.display_name)}</div>
                     <div class="loc-item-subtitle">${escapeHtml(item.display_name)}</div>
                 </div>
@@ -377,12 +382,12 @@ function initGeolocation() {
 
         if (searchBtn) {
             searchBtn.disabled = true;
-            searchBtn.innerHTML = '<span>Tracing...</span>';
+            searchBtn.innerHTML = '<span>Locating...</span>';
         }
 
         if (statusChip && statusText) {
             statusChip.className = 'loc-status-chip tracing';
-            statusText.textContent = 'Tracing coordinates...';
+            statusText.textContent = 'Resolving location...';
         }
 
         fetch(`/api/geocode?q=${encodeURIComponent(address)}`)
@@ -390,15 +395,15 @@ function initGeolocation() {
             .then(data => {
                 if (searchBtn) {
                     searchBtn.disabled = false;
-                    searchBtn.innerHTML = '<span>Find &amp; Trace</span> <span>📍</span>';
+                    searchBtn.innerHTML = '<span>Locate</span>';
                 }
 
                 if (data && data.success && data.lat && data.lon) {
                     traceLocation(data.lat, data.lon, data.display_name, true, address);
                     if (searchInput) searchInput.value = data.display_name;
-                    showFeedback(`✓ Traced: ${data.display_name}`, "success");
+                    showFeedback(`✓ Location confirmed: ${data.display_name}`, "success");
                 } else {
-                    const msg = data && data.message ? data.message : `Could not trace location for "${address}". Please try a nearby area or click directly on the map.`;
+                    const msg = data && data.message ? data.message : `Could not resolve coordinates for "${address}". Please try a nearby area or click directly on the map.`;
                     showFeedback(msg, "warning");
                     if (statusChip && statusText && (!latInput.value || !lonInput.value)) {
                         statusChip.className = 'loc-status-chip untraced';
@@ -409,9 +414,9 @@ function initGeolocation() {
             .catch(err => {
                 if (searchBtn) {
                     searchBtn.disabled = false;
-                    searchBtn.innerHTML = '<span>Find &amp; Trace</span> <span>📍</span>';
+                    searchBtn.innerHTML = '<span>Locate</span>';
                 }
-                showFeedback("Connection issue tracing location. You can click directly on the map to pinpoint.", "warning");
+                showFeedback("Connection issue locating address. You can click directly on the map to pinpoint.", "warning");
             });
     }
 
@@ -421,47 +426,56 @@ function initGeolocation() {
         });
     }
 
+    if (searchInput) {
+        searchInput.addEventListener('blur', () => {
+            const queryVal = searchInput.value.trim();
+            if (queryVal && (!latInput.value || !lonInput.value)) {
+                executeSearch(queryVal);
+            }
+        });
+    }
+
     // -------------------------------------------------------------
     // 6. Device GPS Location Detection
     // -------------------------------------------------------------
     if (gpsBtn) {
         gpsBtn.addEventListener('click', () => {
             if (!navigator.geolocation) {
-                showFeedback("Your browser does not support GPS. You can search or click directly on the map.", "info");
+                showFeedback("Your browser does not support location detection. You can enter an address or click directly on the map.", "info");
                 return;
             }
 
             gpsBtn.disabled = true;
-            gpsBtn.innerHTML = '<span>Acquiring GPS...</span>';
+            gpsBtn.innerHTML = '<span>Locating...</span>';
 
             if (statusChip && statusText) {
                 statusChip.className = 'loc-status-chip tracing';
-                statusText.textContent = 'Acquiring GPS...';
+                statusText.textContent = 'Acquiring location...';
             }
 
             navigator.geolocation.getCurrentPosition(
                 (pos) => {
                     gpsBtn.disabled = false;
-                    gpsBtn.innerHTML = '<span>🛰️</span> <span>Use GPS</span>';
+                    gpsBtn.innerHTML = '<span>Use My Location</span>';
                     const lat = pos.coords.latitude;
                     const lon = pos.coords.longitude;
-                    traceLocation(lat, lon, "Your Device Location (GPS)", true);
+                    traceLocation(lat, lon, "Device Location", true);
                     reverseGeocodeLocation(lat, lon);
-                    showFeedback("✓ Live device GPS location acquired and traced!", "success");
+                    showFeedback("✓ Current location acquired and confirmed.", "success");
                 },
                 (err) => {
                     gpsBtn.disabled = false;
-                    gpsBtn.innerHTML = '<span>🛰️</span> <span>Use GPS</span>';
+                    gpsBtn.innerHTML = '<span>Use My Location</span>';
 
-                    let errorMsg = "GPS access was not permitted. You can type any place name above or click directly on the map.";
+                    let errorMsg = "Location access was not permitted. You can type any place name above or click directly on the map.";
                     if (err.code === err.TIMEOUT) {
-                        errorMsg = "GPS detection timed out. Please type your location or click on the map.";
+                        errorMsg = "Location detection timed out. Please enter your location or click on the map.";
                     }
                     showFeedback(errorMsg, "info");
 
                     if (statusChip && statusText && (!latInput.value || !lonInput.value)) {
                         statusChip.className = 'loc-status-chip untraced';
-                        statusText.textContent = 'GPS Unavailable';
+                        statusText.textContent = 'Location Unavailable';
                     }
                 },
                 {
@@ -568,8 +582,15 @@ function initGeolocation() {
     if (reportForm) {
         reportForm.addEventListener('submit', (e) => {
             if (!latInput.value || !lonInput.value) {
+                const queryVal = searchInput ? searchInput.value.trim() : '';
+                if (queryVal) {
+                    e.preventDefault();
+                    executeSearch(queryVal);
+                    showFeedback("Resolving location. Please submit again once confirmed.", "info");
+                    return;
+                }
                 e.preventDefault();
-                showFeedback("⚠️ Please select or trace the water body location on the map before submitting.", "warning");
+                showFeedback("Please enter and resolve the water body location before submitting.", "warning");
                 if (searchInput) {
                     searchInput.focus();
                     searchInput.scrollIntoView({ behavior: 'smooth', block: 'center' });
